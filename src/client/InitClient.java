@@ -9,7 +9,7 @@ public class InitClient {
 		ClientCommunications clientCommunications = new ClientCommunications("127.0.0.1", 5555, data);
 		LogInController logInController = new LogInController(clientCommunications, "Test1", "password");
 
-
+	//NANANNANAN
 	}
 
 }
