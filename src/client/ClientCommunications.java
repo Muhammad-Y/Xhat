@@ -1,15 +1,17 @@
 package client;
 
+import client.gui.MainController;
+import common.Message;
+import common.ResultCode;
+import org.apache.commons.io.FileUtils;
+
+import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
-
-import client.gui.MainController;
-import common.Message;
-import common.ResultCode;
 
 public class ClientCommunications implements Runnable {
 	private Thread thread;
@@ -235,16 +237,18 @@ public class ClientCommunications implements Runnable {
 			Message message = (Message)obj;
 			Contact senderContact = null;
 			boolean isGroupMsg = message.isGroupMessage();
-			if (isGroupMsg == true) {
-				senderContact = data.getGroup(message.getRecipient());
-			} else {
-				senderContact = data.getContact(message.getSender());
-			}
+			senderContact = isGroupMsg ? data.getGroup(message.getRecipient()) : data.getContact(message.getSender());
+
 			if(senderContact != null) {
 				String senderName = (isGroupMsg == true) ? ((GroupChat)senderContact).getGroupId() : senderContact.getName();
 				ClientLogger.logInfo("Recevied message from: " + senderName);
 				if(mainController.isContactSelected(senderName)) {
-					mainController.addMessageToConversation(senderContact, message, false);
+					System.out.println(message.getFileName()+"\n"+message.getType());
+					if(message.getType() == Message.TYPE_TEXT)
+						mainController.addMessageToConversation(senderContact, message, true);
+					else if(message.getType() == Message.TYPE_FILE){
+						mainController.addMessageToConversation(senderContact, message, false);
+					}
 				} else {
 					senderContact.addUnreadMessage(message);
 					mainController.notifyNewMessage(senderName, message.isGroupMessage());

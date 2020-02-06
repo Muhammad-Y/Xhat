@@ -174,11 +174,10 @@ public class MainController {
 		clientCommunications.disconnect();
 	}
 
-	public boolean sendMessage(String recipient, byte[] payload, boolean isGroupMsg, int type) {
+	public boolean sendMessage(String recipient, byte[] payload, String filename, boolean isGroupMsg, int type) {
 		boolean success = false;
 		try {
-			byte[] stegoData = Steganography.imageToByteArray(stego.encode(payload));
-			Message message = new Message(recipient, isGroupMsg, type, stegoData);
+			Message message = new Message(recipient, isGroupMsg, filename, type, payload);
 			success = clientCommunications.sendMessage(message);
 			if(success) {
 				message.setSender("You");
@@ -288,7 +287,7 @@ public class MainController {
 	
 	private JLabel decodeMessage(Message message) {
 		JLabel jLabelMessage = null;
-		BufferedImage stegoImage = Steganography.byteArrayToImage(message.getStegoData());
+		BufferedImage stegoImage = Steganography.byteArrayToImage(message.getFileData());
 		if (stegoImage != null) {
 			byte[] payloadData = stego.decode(stegoImage);
 			int messageType = message.getType();
@@ -316,10 +315,12 @@ public class MainController {
 		if(decode == true) {
 			jLabelMessage = decodeMessage(message);
 		} else {
-			ImageIcon stegoImage = new ImageIcon(message.getStegoData());
-			jLabelMessage = new JLabel(stegoImage, SwingConstants.LEFT);
-			String key = contact.addUndecodedMessage(message);
-			jLabelMessage.setName(key);
+//			ImageIcon stegoImage = new ImageIcon(message.getFileData());
+//			jLabelMessage = new JLabel(stegoImage, SwingConstants.LEFT);
+//			String key = contact.addUndecodedMessage(message);
+//			jLabelMessage.setName(key);
+
+			jLabelMessage = new JLabel(message.getFileName());
 		}
 		if (jLabelMessage != null) {
 			jLabelMessage.setFont(plainMessageFont);

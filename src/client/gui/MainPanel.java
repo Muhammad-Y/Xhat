@@ -12,6 +12,8 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 
 import javax.imageio.ImageIO;
@@ -331,6 +333,25 @@ public class MainPanel extends JPanel {
 		return isGroupInFocus;
 	}
 
+	/**
+	 * Converts a File-object to a byte array
+	 *
+	 * @param file the file to convert
+	 * @return the file as a byte array
+	 */
+	private byte[] readFileToByteArray(File file){
+		FileInputStream fis = null;
+		byte[] byteArray = new byte[(int) file.length()];
+		try{
+			fis = new FileInputStream(file);
+			fis.read(byteArray);
+			fis.close();
+		}catch(IOException ioExp){
+			ioExp.printStackTrace();
+		}
+		return byteArray;
+	}
+
 	private class ListListener implements ListSelectionListener {
 		@Override
 		public void valueChanged(ListSelectionEvent e) {
@@ -360,72 +381,82 @@ public class MainPanel extends JPanel {
 	 */
 	private class ButtonListener implements ActionListener {
 		public void actionPerformed(ActionEvent event) {
-			if(event.getSource() == btnLogout) {
+			if (event.getSource() == btnLogout)
 				mainController.disconnect();
-			} else if (event.getSource() == btnSend) {
-				mainController.restartDisconnectTimer();
-				JLabel selectedContact = (isGroupInFocus) ? jlistGroupChats.getSelectedValue() : jlistContactList.getSelectedValue();
-				byte[] bytesOfMessage = null;
-				try {
-					bytesOfMessage = getMessageTxt().getBytes("UTF-8");
-				} catch (UnsupportedEncodingException e) {
-					e.printStackTrace();
-				}
-				if(bytesOfMessage.length > 3 * Math.pow(10, 6)) {
-					JOptionPane.showMessageDialog(null, "Please write a message consisting of less than 3 MB");
-				} else if (selectedContact != null) {
-					mainController.sendMessage(selectedContact.getName(), getMessageTxt().getBytes(), isGroupInFocus, Message.TYPE_TEXT);
-				} else {
-					JOptionPane.showMessageDialog(null, "Please select a contact or a group.", "Info", JOptionPane.INFORMATION_MESSAGE);
-				}
-			} else if (event.getSource() == btnSendFile) {
-				mainController.restartDisconnectTimer();
-				JLabel selectedContact = (isGroupInFocus) ? jlistGroupChats.getSelectedValue() : jlistContactList.getSelectedValue();
-				if(selectedContact != null) {
-					File file = generateSelectFile();
-					BufferedImage image;
-					if(file != null) {
-						try {
-							image = ImageIO.read(file);
-							byte[] imageData = Steganography.imageToByteArray(image);
-							mainController.sendMessage(selectedContact.getName(), imageData, isGroupInFocus, Message.TYPE_IMAGE);
-						} catch (Exception e) {}
-					}
-				} else {
-					JOptionPane.showMessageDialog(null, "Please select a contact or a group.", "Info", JOptionPane.INFORMATION_MESSAGE);
-				}
-			} else if (event.getSource() == btnAddGroupChat) {
+			else if (event.getSource() == btnSend)
+				sendTextMessage();
+			else if (event.getSource() == btnSendFile)
+				sendFileMessage();
+			else if (event.getSource() == btnAddGroupChat)
 				mainController.showAddGroupChatPanel();
-			} else if (event.getSource() == btnAddContact) {
+			else if (event.getSource() == btnAddContact)
 				mainController.showAddContactPanel();
-			} else if (event.getSource() == btnRemoveCon) {
-				JLabel selectedContact = jlistContactList.getSelectedValue();
-				if (selectedContact != null) {
-					Object[] options = { "Yes", "No" };
-					int choice = JOptionPane.showOptionDialog(null,
-							"Do you want to remove " + selectedContact.getName() + " from contact list?",
-							"Remove Contact", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[1]);
-					if (choice == 0) {
-						System.out.println("Yes");
-					} else {
-						System.out.println("No");
-					}
-				} else {
-					JOptionPane.showMessageDialog(null, "Please select a contact.", "Info", JOptionPane.INFORMATION_MESSAGE);
+			else if (event.getSource() == btnRemoveCon)
+				removeContact();
+			else if (event.getSource() == btnLeaveGroupChat)
+				leaveGroupChat();
+		}
+
+		private void sendTextMessage(){
+			mainController.restartDisconnectTimer();
+			JLabel selectedContact = (isGroupInFocus) ? jlistGroupChats.getSelectedValue() : jlistContactList.getSelectedValue();
+			byte[] bytesOfMessage = null;
+			try {
+				bytesOfMessage = getMessageTxt().getBytes("UTF-8");
+			} catch (UnsupportedEncodingException e) {
+				e.printStackTrace();
+			}
+			if (bytesOfMessage.length > 3 * Math.pow(10, 6))
+				JOptionPane.showMessageDialog(null, "Please write a message consisting of less than 3 MB");
+			else if (selectedContact != null)
+				mainController.sendMessage(selectedContact.getName(), getMessageTxt().getBytes(), "", isGroupInFocus, Message.TYPE_TEXT);
+			else
+				JOptionPane.showMessageDialog(null, "Please select a contact or a group.", "Info", JOptionPane.INFORMATION_MESSAGE);
+		}
+
+		private void sendFileMessage() {
+			mainController.restartDisconnectTimer();
+			JLabel selectedContact = (isGroupInFocus) ? jlistGroupChats.getSelectedValue() : jlistContactList.getSelectedValue();
+			if (selectedContact != null) {
+				File file = generateSelectFile();
+				if (file != null) {
+					byte[] fileData = readFileToByteArray(file);
+					String filename = file.getName();
+					mainController.sendMessage(selectedContact.getName(), fileData, filename, isGroupInFocus, Message.TYPE_FILE);
 				}
-			} else if (event.getSource() == btnLeaveGroupChat) {
-				JLabel selectedGroup = jlistGroupChats.getSelectedValue();
-				if (selectedGroup != null) {
-					Object[] options = { "Yes", "No" };
-					int choice = JOptionPane.showOptionDialog(null,
-							"Do you want to leave " + selectedGroup.getText() + "?", "Leave Group",
-							JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[1]);
-					if (choice == 0) {
-						mainController.leaveGroupChat(selectedGroup.getName());
-					}
+			} else {
+				JOptionPane.showMessageDialog(null, "Please select a contact or a group.", "Info", JOptionPane.INFORMATION_MESSAGE);
+			}
+		}
+
+		private void removeContact() {
+			JLabel selectedContact = jlistContactList.getSelectedValue();
+			if (selectedContact != null) {
+				Object[] options = {"Yes", "No"};
+				int choice = JOptionPane.showOptionDialog(null,
+						"Do you want to remove " + selectedContact.getName() + " from contact list?",
+						"Remove Contact", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[1]);
+				if (choice == 0) {
+					System.out.println("Yes");
 				} else {
-					JOptionPane.showMessageDialog(null, "Please select a group.", "Info", JOptionPane.INFORMATION_MESSAGE);
+					System.out.println("No");
 				}
+			} else {
+				JOptionPane.showMessageDialog(null, "Please select a contact.", "Info", JOptionPane.INFORMATION_MESSAGE);
+			}
+		}
+
+		private void leaveGroupChat() {
+			JLabel selectedGroup = jlistGroupChats.getSelectedValue();
+			if (selectedGroup != null) {
+				Object[] options = { "Yes", "No" };
+				int choice = JOptionPane.showOptionDialog(null,
+						"Do you want to leave " + selectedGroup.getText() + "?", "Leave Group",
+						JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[1]);
+				if (choice == 0)
+					mainController.leaveGroupChat(selectedGroup.getName());
+			} else {
+				JOptionPane.showMessageDialog(null, "Please select a group.", "Info", JOptionPane.INFORMATION_MESSAGE);
 			}
 		}
 	}

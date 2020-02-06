@@ -14,21 +14,23 @@ public class Message implements Serializable {
 	private Instant clientReceivedTime;
 	private String sender;
 	private String recipient;
+	private String filename;
 	private boolean isGroupMsg;
 	private int type;
-	private final byte[] stegoData;
+	private final byte[] fileData;
 
 	/**
 	 * Skapar ett Message-objekt.
 	 * @param recipient Identifierare för mottagaren.
 	 * @param isGroupMsg Anger om mottagaren är en grupp.
-	 * @param stegoData Ett bild-objekt som innehåller meddeladets payload krypterat med steganografi.
+	 * @param fileData Ett bild-objekt som innehåller meddeladets payload krypterat med steganografi.
 	 */
-	public Message(String recipient, boolean isGroupMsg, int type, byte[] stegoData) {
+	public Message(String recipient, boolean isGroupMsg, String filename, int type, byte[] fileData) {
 		this.recipient = recipient;
 		this.isGroupMsg = isGroupMsg;
 		this.type = type;
-		this.stegoData = stegoData;
+		this.filename = filename;
+		this.fileData = fileData;
 	}
 	
 	/**
@@ -95,7 +97,11 @@ public class Message implements Serializable {
 	 * Returnerar bild-objektet som innehåller meddeladets payload krypterat med steganografi.
 	 * @return Bild-objektet om sådant finns, annars null.
 	 */
-	public byte[] getStegoData() {
-		return stegoData;
+	public byte[] getFileData() {
+		return fileData;
+	}
+
+	public String getFileName() {
+		return filename;
 	}
 }
