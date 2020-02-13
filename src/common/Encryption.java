@@ -67,20 +67,12 @@ public class Encryption{
 	 */
 	public static File encryptFile(File inputFile, String keyPath, String key)throws Exception{
 		Cipher cipherRSA = Cipher.getInstance("RSA/ECB/PKCS1Padding");
-		if(key == "pvt") {
-			byte[] keyBytes = Files.readAllBytes(Paths.get(keyPath));
-			PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(keyBytes);
-			KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-			PrivateKey pvtKey = keyFactory.generatePrivate(keySpec);
-			cipherRSA.init(Cipher.ENCRYPT_MODE, pvtKey);
-		} else if(key == "pub") {
-			byte[] bytes = Files.readAllBytes(Paths.get(keyPath));
-			X509EncodedKeySpec keySpec = new X509EncodedKeySpec(bytes);
-			KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-			PublicKey pubKey = keyFactory.generatePublic(keySpec);
-			cipherRSA.init(Cipher.ENCRYPT_MODE, pubKey);
-		}
-		System.out.println(inputFile.getPath());
+		byte[] bytes = Files.readAllBytes(Paths.get(keyPath));
+		X509EncodedKeySpec keySpec = new X509EncodedKeySpec(bytes);
+		KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+		PublicKey pubKey = keyFactory.generatePublic(keySpec);
+		cipherRSA.init(Cipher.ENCRYPT_MODE, pubKey);
+
 		KeyGenerator keyGen = KeyGenerator.getInstance("AES");
 		keyGen.init(128);
 		SecretKey secretKey = keyGen.generateKey();
@@ -115,21 +107,11 @@ public class Encryption{
 	public static File decryptFile(File inputFile, String keyPath, String key) throws Exception{
 		File decrypted = null;
 		Cipher cipherRSA = Cipher.getInstance("RSA/ECB/PKCS1Padding");
-		if(key == "pub") {
-			String pubKeyFile = keyPath;
-			byte[] bytes = Files.readAllBytes(Paths.get(pubKeyFile));
-			X509EncodedKeySpec keySpec = new X509EncodedKeySpec(bytes);
-			KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-			PublicKey publicKey = keyFactory.generatePublic(keySpec);
-			cipherRSA.init(Cipher.DECRYPT_MODE, publicKey);
-		} else {
-			byte[] keyBytes = Files.readAllBytes(Paths.get(keyPath));
-			PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(keyBytes);
-			KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-			PrivateKey privateKey = keyFactory.generatePrivate(keySpec);
-			cipherRSA.init(Cipher.DECRYPT_MODE, privateKey);
-		}
-		System.out.println(inputFile.getPath());
+		PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(Files.readAllBytes(Paths.get(keyPath)));
+		KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+		PrivateKey privateKey = keyFactory.generatePrivate(keySpec);
+		cipherRSA.init(Cipher.DECRYPT_MODE, privateKey);
+
 		try (FileInputStream inStream = new FileInputStream(inputFile)) {
 			SecretKeySpec secretKeySpec = null;
 			byte[] fileBytes = new byte[256];
