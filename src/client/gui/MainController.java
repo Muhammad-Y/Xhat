@@ -310,9 +310,17 @@ public class MainController {
 	}
 
 	public void addMessageToConversation(Contact contact, Message message, boolean text) {
-		JLabel jLabelMessage;
+		JLabel jLabelMessage = null;
 		if(text) {
-			jLabelMessage = decodeMessage(message);
+			try {
+				File file = new File("temp/test.txt.enc");
+				FileUtils.writeByteArrayToFile(file, message.getFileData());
+				Encryption.decryptFile(file, ENCRYPTION_KEY, "pvt");
+				byte[] data = FileUtils.readFileToByteArray(file);
+				jLabelMessage = new JLabel(new String(data));
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
 		} else {
 //			ImageIcon stegoImage = new ImageIcon(message.getFileData());
 //			jLabelMessage = new JLabel(stegoImage, SwingConstants.LEFT);

@@ -1,18 +1,24 @@
 package client.gui;
 
-import java.awt.*;
-import java.awt.event.*;
-import java.io.*;
-
-import javax.swing.*;
-import javax.swing.border.*;
-import javax.swing.event.*;
-import javax.swing.filechooser.FileNameExtensionFilter;
-
 import common.Encryption;
 import common.Message;
 import org.apache.commons.io.FileUtils;
 import sun.swing.DefaultLookup;
+
+import javax.swing.*;
+import javax.swing.border.Border;
+import javax.swing.border.EmptyBorder;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 
 /**
  * En klass som möjliggör för en användare att interagera med systemet 
@@ -357,7 +363,7 @@ public class MainPanel extends JPanel {
 				leaveGroupChat();
 		}
 
-		private void sendTextMessage(){
+		private void sendTextMessage() {
 			mainController.restartDisconnectTimer();
 			JLabel selectedContact = (isGroupInFocus) ? jlistGroupChats.getSelectedValue() : jlistContactList.getSelectedValue();
 			byte[] bytesOfMessage = null;
@@ -368,8 +374,17 @@ public class MainPanel extends JPanel {
 			}
 			if (bytesOfMessage.length > 3 * Math.pow(10, 6))
 				JOptionPane.showMessageDialog(null, "Please write a message consisting of less than 3 MB");
-			else if (selectedContact != null)
-				mainController.sendMessage(selectedContact.getName(), getMessageTxt().getBytes(), "", isGroupInFocus, Message.TYPE_TEXT);
+			else if (selectedContact != null) {
+				File file = new File("temp/file.txt");
+				try {
+					FileUtils.writeByteArrayToFile(file, getMessageTxt().getBytes());
+					File encryptedFile = Encryption.encryptFile(file, getEncryptionKey(selectedContact.getName()), "pub");
+					byte[] data = readFileToByteArray(encryptedFile);
+					mainController.sendMessage(selectedContact.getName(), data, "", isGroupInFocus, Message.TYPE_TEXT);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
 			else
 				JOptionPane.showMessageDialog(null, "Please select a contact or a group.", "Info", JOptionPane.INFORMATION_MESSAGE);
 		}
