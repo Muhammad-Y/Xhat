@@ -1,6 +1,7 @@
 package client;
 
 import client.gui.MainController;
+import common.Encryption;
 import common.Message;
 import common.ResultCode;
 import org.apache.commons.io.FileUtils;
@@ -15,9 +16,8 @@ import java.net.SocketTimeoutException;
 
 public class ClientCommunications implements Runnable {
 	private Thread thread;
-	private String ip;
+	private String ip, userName, encryptionKey;
 	private int port;
-	private String userName;
 	private Socket socket;
 	private ObjectInputStream ois;
 	private ObjectOutputStream oos;
@@ -77,17 +77,11 @@ public class ClientCommunications implements Runnable {
 	
 	public void leaveGroup(String groupId) {
 		try {
-
 	        oos.writeObject("LeaveGroup");
-
 	        oos.writeObject(groupId);
-
 	        oos.flush();
-
 	    } catch (IOException e) {
-
 	        disconnect();
-
 	    }
 	}
 	
@@ -135,6 +129,7 @@ public class ClientCommunications implements Runnable {
 
 	public int register(String userName, String password) {
 		int result = ResultCode.ok;
+		byte[] key = new byte[0];
 		if (!this.loggedIn) {
 			try {
 				if (!isConnected()) {
@@ -144,12 +139,15 @@ public class ClientCommunications implements Runnable {
 				oos.writeObject(new String[] { userName, password });
 				oos.flush();
 				result = ois.readInt();
-			} catch (IOException e) {
+				key = (byte[]) ois.readObject();
+			} catch (IOException | ClassNotFoundException e) {
+				e.printStackTrace();
 				ClientLogger.logError("Registration failed(IOException): " + e.getMessage());
 			}
 		}
 		disconnect();
-		
+		if(result == ResultCode.ok)
+			receiveEncryptionKey(key, userName, true);
 		return result;
 	}
 	
@@ -162,15 +160,15 @@ public class ClientCommunications implements Runnable {
 			stopListener();
 			try {
 				oos.writeObject("Disconnect");
-			} catch (IOException e1) {}
+			} catch (IOException e1) {
+				e1.printStackTrace();
+			}
 			if (socket != null) {
 				try {
 					socket.close();
 				} catch (IOException e) {}
 			}
-			if (loggedIn == true) {
-				mainController.disconnected(message);
-			}
+			if (loggedIn) mainController.disconnected(message);
 			this.loggedIn = false;
 			this.data = new Data();
 			ClientLogger.logInfo(message);
@@ -179,7 +177,7 @@ public class ClientCommunications implements Runnable {
 	
 	private void establishConnection() throws SocketException, IOException {
 		socket = new Socket(ip, port);
-		socket.setSoTimeout(1000);
+		//socket.setSoTimeout(1000);
 		oos = new ObjectOutputStream(socket.getOutputStream());
 		ois = new ObjectInputStream(socket.getInputStream());
 	}
@@ -209,7 +207,8 @@ public class ClientCommunications implements Runnable {
 			String[][] groups = (String[][])groupsObj;
 			data.clearGroups();
 			for (int i = 0; i < groups.length; i++) {
-				data.addGroup(groups[i][0], groups[i][1]); //TODO Om gruppen redan existerar?
+				data.addGroup(groups[i][0], groups[i][1]);
+				//TODO Om gruppen redan existerar?
 			}
 			mainController.updateGroupList();
 			ClientLogger.logInfo("Received and processed groupChats");
@@ -241,7 +240,7 @@ public class ClientCommunications implements Runnable {
 
 			if(senderContact != null) {
 				String senderName = (isGroupMsg == true) ? ((GroupChat)senderContact).getGroupId() : senderContact.getName();
-				ClientLogger.logInfo("Recevied message from: " + senderName);
+				ClientLogger.logInfo("Received message from: " + senderName);
 				if(mainController.isContactSelected(senderName)) {
 					System.out.println(message.getFileName()+"\n"+message.getType());
 					if(message.getType() == Message.TYPE_TEXT)
@@ -281,6 +280,31 @@ public class ClientCommunications implements Runnable {
 		}
 	}
 
+	private void receiveEncryptionKey(byte[] requestObj, String userName, boolean privateKey){
+		if (requestObj != null) {
+			ClientLogger.logInfo("Received encryption key");
+			try {
+				if(privateKey)
+					FileUtils.writeByteArrayToFile(new File("key/"+ userName+".pvt"), (byte[])requestObj);
+				else
+					FileUtils.writeByteArrayToFile(new File("key/"+ userName+".pub"), (byte[])requestObj);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
+	public void getUserKey(String username){
+		byte[] key = null;
+		try {
+			oos.writeObject("UserKey");
+			oos.writeObject(username);
+			oos.flush();
+		}catch (Exception e){
+			e.printStackTrace();
+		}
+	}
+
 	private void startListener() {
 		if(thread == null) {
 			thread = new Thread(this);
@@ -312,6 +336,11 @@ public class ClientCommunications implements Runnable {
 						ClientLogger.logInfo("Received request(" + request + ")");
 						socket.setSoTimeout(500);
 						switch (request) {
+						case "EncryptionKey":
+							String username = (String) ois.readObject();
+							byte[] file = (byte[]) ois.readObject();
+							receiveEncryptionKey(file, username, false);
+							break;
 						case "NewMessage":
 							receiveMessage(ois.readObject());
 							break;

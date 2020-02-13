@@ -1,27 +1,15 @@
 package client.gui;
 
-import java.awt.Color;
-import java.awt.Font;
+import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.util.Collection;
-import java.util.Set;
+import java.io.File;
+import java.io.IOException;
+import java.util.*;
 import java.util.Timer;
-import java.util.TimerTask;
-
-import javax.swing.DefaultListModel;
-import javax.swing.ImageIcon;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.SwingConstants;
-import javax.swing.SwingUtilities;
-
-import client.ClientCommunications;
-import client.Contact;
-import client.Data;
-import client.GroupChat;
-import client.Steganography;
-import common.Message;
+import javax.swing.*;
+import client.*;
+import common.*;
+import org.apache.commons.io.FileUtils;
 
 public class MainController {
 	private Steganography stego = new Steganography();
@@ -29,10 +17,8 @@ public class MainController {
 	private DefaultListModel<JLabel> contactsModel = new DefaultListModel<>();//Måste synkroniseras
 	private DefaultListModel<String> resultsModel = new DefaultListModel<>();
 	private String[] searchResults;
-	private String lastSearchString;
-	private JFrame frameMain;
-	private JFrame frameAddGroup;
-	private JFrame frameAddContact;
+	private String lastSearchString, downloadPath;
+	private JFrame frameMain, frameAddGroup, frameAddContact;
 	private MainPanel mainPanel;
 	private AddGroupChatPanel addGroupChatPanel;
 	private AddContactPanel addContactPanel;
@@ -45,11 +31,14 @@ public class MainController {
 	private JLabel contactInFocus;
     public static Timer timer;
     private final static int DISCONNECT_MILLISEC = 50*60*1000;
+    private static String ENCRYPTION_KEY;
 
 
 	public MainController(ClientCommunications clientCommunications, Data data) {
 		this.clientCommunications = clientCommunications;
 		this.data = data;
+		ENCRYPTION_KEY = "key/"+ getUserName()+".pvt";
+		setDownloadPath();
 		showMainPanel();
 		startDisconnectTimer();
 	}
@@ -70,6 +59,12 @@ public class MainController {
 		if(frameMain != null) {
 			frameMain.dispose();
 		}
+	}
+
+	public void setDownloadPath() {
+		String home = System.getProperty("user.home");
+		String separator = System.getProperty("file.separator");
+		downloadPath = home + separator + "Downloads" + separator;
 	}
 	
 	public void showAddGroupChatPanel() {
@@ -174,10 +169,10 @@ public class MainController {
 		clientCommunications.disconnect();
 	}
 
-	public boolean sendMessage(String recipient, byte[] payload, String filename, boolean isGroupMsg, int type) {
+	public boolean sendMessage(String recipient, byte[] bytes, String filename, boolean isGroupMsg, int type) {
 		boolean success = false;
 		try {
-			Message message = new Message(recipient, isGroupMsg, filename, type, payload);
+			Message message = new Message(recipient, isGroupMsg, filename, type, bytes);
 			success = clientCommunications.sendMessage(message);
 			if(success) {
 				message.setSender("You");
@@ -191,6 +186,10 @@ public class MainController {
 			e.printStackTrace();
 		}
 		return success;
+	}
+
+	public void getUserKey(String username){
+		clientCommunications.getUserKey(username);
 	}
 	
 	public void createNewGroup(String groupName, DefaultListModel<String> membersModel) {
@@ -310,21 +309,27 @@ public class MainController {
 		return jLabelMessage;
 	}
 
-	public void addMessageToConversation(Contact contact, Message message, boolean decode) {
+	public void addMessageToConversation(Contact contact, Message message, boolean text) {
 		JLabel jLabelMessage;
-		if(decode == true) {
+		if(text) {
 			jLabelMessage = decodeMessage(message);
 		} else {
 //			ImageIcon stegoImage = new ImageIcon(message.getFileData());
 //			jLabelMessage = new JLabel(stegoImage, SwingConstants.LEFT);
 //			String key = contact.addUndecodedMessage(message);
 //			jLabelMessage.setName(key);
-
+			try {
+				File file = new File(downloadPath+message.getFileName()+".enc");
+				FileUtils.writeByteArrayToFile(file, message.getFileData());
+				Encryption.decryptFile(file,ENCRYPTION_KEY, "pvt");
+				file.delete();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
 			jLabelMessage = new JLabel(message.getFileName());
 		}
 		if (jLabelMessage != null) {
 			jLabelMessage.setFont(plainMessageFont);
-//			jLabelMessage.setHorizontalAlignment(SwingConstants.RIGHT);
 			contact.addMessageToConversation(jLabelMessage);
 			mainPanel.scrollDownConversation();
 		}

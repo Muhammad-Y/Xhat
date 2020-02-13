@@ -57,7 +57,7 @@ public class LogInController {
 	}
 
 	public void login(String userName, String password) {
-		if (clientCommunications.login(userName, password) == true) {
+		if (clientCommunications.login(userName, password)) {
 			disposeLogInPanel();
 		} else {
 			JOptionPane.showMessageDialog(null, "Login failed", "Failure", JOptionPane.ERROR_MESSAGE);

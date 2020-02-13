@@ -1,15 +1,20 @@
 package server;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
+import java.security.KeyPair;
+import java.security.NoSuchAlgorithmException;
 import java.util.Calendar;
 import java.util.LinkedList;
 
+import common.Encryption;
 import common.Message;
 import common.ResultCode;
+import org.apache.commons.io.FileUtils;
 
 public class ClientConnection implements Runnable, UserListener {
 	private User user;
@@ -28,7 +33,7 @@ public class ClientConnection implements Runnable, UserListener {
 		this.logListener = listener;
 		this.loggedIn = false;
 		try {
-			socket.setSoTimeout(1000);
+			//socket.setSoTimeout(1000);
 			ois = new ObjectInputStream(socket.getInputStream());
 			oos = new ObjectOutputStream(socket.getOutputStream());
 			threadPool.execute(this);
@@ -75,11 +80,9 @@ public class ClientConnection implements Runnable, UserListener {
 
 	private void notifyContacts() {
 		LinkedList<User> contacts = user.getContacts();
-		if (!contacts.isEmpty()) {
-			for (User contact : contacts) {
+		if (!contacts.isEmpty())
+			for (User contact : contacts)
 				contact.updateContactList(contact);
-			}
-		}
 	}
 
 	private void receiveMessage(Object obj) throws ClassNotFoundException, IOException {
@@ -87,6 +90,7 @@ public class ClientConnection implements Runnable, UserListener {
 		if (obj instanceof Message && (message=(Message)obj).getRecipient() != null) {
 			message.setServerReceivedTime(Calendar.getInstance().toInstant());
 			message.setSender(getUser().getUserName());
+			FileUtils.writeByteArrayToFile(new File("data/files/test.pdf"), message.getFileData());
 			transferMessageToRecipients(message);
 		} else {
 			logListener.logError("receiveMessage() Received invalid message-obj from " + getUser().getUserName());
@@ -127,38 +131,26 @@ public class ClientConnection implements Runnable, UserListener {
 		if (obj instanceof String[] && (newGroup = (String[])obj).length >= 4) {
 			String groupName = newGroup[0];
 			String[] memberNames = new String[newGroup.length - 1];
-			for (int i = 1; i < newGroup.length; i++) {
-				memberNames[i - 1] = newGroup[i];
-			}
+			for (int i = 1; i < newGroup.length; i++) memberNames[i - 1] = newGroup[i];
 			String newGroupId = clientsManager.newGroup(user, groupName, memberNames);
-			if (newGroupId != null) {
+			if (newGroupId != null)
 				logListener.logInfo("newGroup() new group by " + user.getUserName() + " created: " + groupName + ", ID: " + newGroupId);
-			}
-		} else {
+		} else
 			logListener.logError("newGroup() Received invalid newGroup-obj from " + getUser().getUserName());
-		}
 	}
 
 	private void receiveLeaveGroup(Object groupIdObj) throws IOException {
-		
 		if(groupIdObj instanceof String){
 		 Group group = clientsManager.getGroup((String)groupIdObj);
-		
 		    if (group != null) {
-
 		        if (group.removeMember(getUser()) && getUser().removeGroup(group)) {
-
 		            logListener.logInfo("receiveLeaveGroup() " + getUser().getUserName() + " removed from group: " + group.getGroupName());
-
 		        }
 		    }
-		    } else {
-
-		        logListener.logInfo("receiveLeaveGroup() group not found: " + (String)groupIdObj);
-
-		    }
-
 		}
+		else
+			logListener.logInfo("receiveLeaveGroup() group not found: " + (String)groupIdObj);
+	}
 
 	private LinkedList<User> getRecipients(Message message) {
 		LinkedList<User> recipients = new LinkedList<User>();
@@ -168,16 +160,11 @@ public class ClientConnection implements Runnable, UserListener {
 			if (group != null && group.isMember(getUser())) {
 				recipients = group.getMembers();
 				recipients.remove(getUser());
-			} else {
-				logListener.logError("getRecipients() group not found: " + message.getRecipient());
-			}
+			} else logListener.logError("getRecipients() group not found: " + message.getRecipient());
 		} else {
 			User user = clientsManager.getUser(recipient);
-			if (user != null) {
-				recipients.add(user);
-			} else {
-				logListener.logError("getRecipients() user not found: " + message.getRecipient());
-			}
+			if (user != null) recipients.add(user);
+			else logListener.logError("getRecipients() user not found: " + message.getRecipient());
 		}
 		return recipients;
 	}
@@ -187,9 +174,8 @@ public class ClientConnection implements Runnable, UserListener {
 		if (recipients != null && !recipients.isEmpty()) {
 			for (User user : recipients) {
 				ClientConnection clientConnection = user.getClientConnection();
-				if (clientConnection != null) {
-					clientConnection.transferMessage(message);
-				} else {
+				if (clientConnection != null) clientConnection.transferMessage(message);
+				else {
 					user.addMessageToBuffer(message);
 					logListener.logInfo("Buffered message for: " + user.getUserName());
 				}
@@ -208,7 +194,25 @@ public class ClientConnection implements Runnable, UserListener {
 			disconnectClient();
 		}
 	}
-	
+
+	private void transferEncryptionKey(Object o, int type){
+		try {
+			if(type==0) {
+				oos.writeObject(o);
+				logListener.logCommunication("Sent encryption key " + o);
+			}
+			if(type==1) {
+				oos.writeObject("EncryptionKey");
+				oos.writeObject(o);
+				oos.writeObject(FileUtils.readFileToByteArray(new File("data/" + o + ".pub")));
+				logListener.logCommunication("Sent encryption key for " + o);
+			}
+			oos.flush();
+		} catch (IOException e) {
+			disconnectClient();
+			e.printStackTrace();
+		}
+	}
 	/**
 	 * Send contactList & groupChats
 	 * @throws IOException 
@@ -248,9 +252,7 @@ public class ClientConnection implements Runnable, UserListener {
 		if (user.hasContactRequests()) {
 			String[] contactRequests = user.getContactRequestsArray();
 			System.out.println("contactRequests.length == " + contactRequests.length);
-			for (String userName : contactRequests) {
-				transferContactRequest(userName);
-			}
+			for (String userName : contactRequests) transferContactRequest(userName);
 		}
 	}
 
@@ -266,17 +268,14 @@ public class ClientConnection implements Runnable, UserListener {
 			oos.writeObject("SearchResult");
 			oos.writeObject(results);
 			logListener.logInfo("searchUser() transferred search results to: " + user.getUserName());
-		} else {
-			logListener.logError("searchUser() Received invalid string-obj from " + getUser().getUserName());
 		}
+		else logListener.logError("searchUser() Received invalid string-obj from " + getUser().getUserName());
 	}
 
 	private boolean hasSpecialCharacters(String string) {
-		for (Character c : string.toCharArray()) {
-			if (!Character.isLetterOrDigit(c)) {
+		for (Character c : string.toCharArray())
+			if (!Character.isLetterOrDigit(c))
 				return true;
-			}
-		}
 		return false;
 	}
 
@@ -295,9 +294,7 @@ public class ClientConnection implements Runnable, UserListener {
 					oos.flush();
 					this.user = user;
 					ClientConnection clientConnection = user.getClientConnection();
-					if (clientConnection != null) {
-						clientConnection.disconnectClient();
-					}
+					if (clientConnection != null)  clientConnection.disconnectClient();
 					user.setClientConnection(this);
 					success = true;
 				} else {
@@ -321,8 +318,7 @@ public class ClientConnection implements Runnable, UserListener {
 				String[] credentials = (String[])credentialsObj;
 				String userName = credentials[0];
 				String password = credentials[1];
-				boolean userNameOk = userName.length() > 0 && userName.length() <= 10 && 
-						!hasSpecialCharacters(userName);
+				boolean userNameOk = userName.length() > 0 && userName.length() <= 10 && !hasSpecialCharacters(userName);
 				boolean passwordOk = password.length() > 0 && password.length() <= 20;
 				if (userNameOk && passwordOk) {
 					User newUser = new User(userName, password);
@@ -336,21 +332,25 @@ public class ClientConnection implements Runnable, UserListener {
 					if (!userNameOk && !passwordOk) {
 						logListener.logError("Registration failed: Username and password have wrong format.");
 						result = ResultCode.wrongCredentials;
-					} else if (!userNameOk) {
+					}
+					else if (!userNameOk) {
 						logListener.logError("Registration failed: Username has wrong format.");
 						result = ResultCode.wrongUsernameFormat;
-					} else if (!passwordOk) {
+					}
+					else if (!passwordOk) {
 						logListener.logError("Registration failed: Password has wrong format.");
 						result = ResultCode.wrongPasswordFormat;
 					}
 				}
-				
 				oos.writeInt(result);
-				oos.flush();
+				if(result == ResultCode.ok){
+					KeyPair keyPair = Encryption.doGenkey(userName);
+					transferEncryptionKey(keyPair.getPrivate().getEncoded(), 0);
+				}
 			} else {
 				logListener.logError("register() Received non-string[] credentials from client.");
 			}
-		} catch (IOException e) {
+		} catch (IOException | NoSuchAlgorithmException e) {
 			logListener.logError("Client registration timeout");
 		}
 	}
@@ -389,7 +389,7 @@ public class ClientConnection implements Runnable, UserListener {
 	@Override
 	public void run() {
 		try {
-			if (loggedIn == false) {
+			if (!loggedIn) {
 				String request = "";
 				Object obj;
 				socket.setSoTimeout(50);
@@ -426,7 +426,7 @@ public class ClientConnection implements Runnable, UserListener {
 					logListener.logError("Received non-string request from " + socket.getInetAddress().getHostAddress());
 				}
 			}
-			if (loggedIn == true) {
+			if (loggedIn) {
 				String request = "";
 				Object obj;
 				socket.setSoTimeout(50);
@@ -454,6 +454,9 @@ public class ClientConnection implements Runnable, UserListener {
 							break;
 						case "Disconnect":
 							disconnectClient();
+							break;
+						case "UserKey":
+							transferEncryptionKey(ois.readObject(), 1);
 							break;
 						default:
 							logListener.logError("Unknown request");
