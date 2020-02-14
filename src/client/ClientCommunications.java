@@ -1,7 +1,6 @@
 package client;
 
 import client.gui.MainController;
-import common.Encryption;
 import common.Message;
 import common.ResultCode;
 import org.apache.commons.io.FileUtils;
@@ -139,7 +138,8 @@ public class ClientCommunications implements Runnable {
 				oos.writeObject(new String[] { userName, password });
 				oos.flush();
 				result = ois.readInt();
-				key = (byte[]) ois.readObject();
+				if(result == ResultCode.ok)
+					key = (byte[]) ois.readObject();
 			} catch (IOException | ClassNotFoundException e) {
 				e.printStackTrace();
 				ClientLogger.logError("Registration failed(IOException): " + e.getMessage());

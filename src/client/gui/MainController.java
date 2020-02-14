@@ -1,15 +1,18 @@
 package client.gui;
 
+import client.*;
+import common.Encryption;
+import common.Message;
+import org.apache.commons.io.FileUtils;
+
+import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
-import java.io.IOException;
-import java.util.*;
+import java.util.Collection;
+import java.util.Set;
 import java.util.Timer;
-import javax.swing.*;
-import client.*;
-import common.*;
-import org.apache.commons.io.FileUtils;
+import java.util.TimerTask;
 
 public class MainController {
 	private Steganography stego = new Steganography();
@@ -172,12 +175,16 @@ public class MainController {
 	public boolean sendMessage(String recipient, byte[] bytes, String filename, boolean isGroupMsg, int type) {
 		boolean success = false;
 		try {
-			Message message = new Message(recipient, isGroupMsg, filename, type, bytes);
-			success = clientCommunications.sendMessage(message);
+			if(type == Message.TYPE_TEXT) {
+				byte[] bytes1 = Encryption.encryptText(mainPanel.getMessageTxt(), mainPanel.getEncryptionKey(recipient)).getBytes("UTF-8");
+				success = clientCommunications.sendMessage(new Message(recipient, isGroupMsg, filename, type, bytes1));
+			}
+			else success = clientCommunications.sendMessage(new Message(recipient, isGroupMsg, filename, type, bytes));
 			if(success) {
+				Message message = new Message(recipient, isGroupMsg, filename, type, bytes);
 				message.setSender("You");
 				Contact contact = (isGroupMsg) ? data.getGroup(recipient) : data.getContact(recipient);
-				addMessageToConversation(contact, message, true);
+				addMessageToConversation(contact, message, message.getType()==0);
 				mainPanel.clearMessageField();
 			}
 		} catch (IllegalArgumentException e) {
@@ -266,7 +273,7 @@ public class MainController {
 			this.contactInFocus = selectedContact;
 			while (contact.hasUnreadMessages()) {
 				Message message = contact.getNextUnreadMessage();
-				addMessageToConversation(contact, message, false);
+				addMessageToConversation(contact, message, message.getType()==0);
 				contact.removeNextUnreadMessage();
 			}
 			mainPanel.setConversationModel(contact.getConversation());
@@ -309,33 +316,29 @@ public class MainController {
 		return jLabelMessage;
 	}
 
-	public void addMessageToConversation(Contact contact, Message message, boolean text) {
+	public void addMessageToConversation(Contact contact, Message message, boolean isText) {
 		JLabel jLabelMessage = null;
-		if(text) {
+		if(isText)
 			try {
-				File file = new File("temp/test.txt.enc");
-				FileUtils.writeByteArrayToFile(file, message.getFileData());
-				Encryption.decryptFile(file, ENCRYPTION_KEY, "pvt");
-				byte[] data = FileUtils.readFileToByteArray(file);
-				jLabelMessage = new JLabel(new String(data));
+				String text = "";
+				if(message.getSender() != "You") text = Encryption.decryptText(new String(message.getFileData()), ENCRYPTION_KEY);
+				else text = new String(message.getFileData());
+				jLabelMessage = new JLabel(text);
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
-		} else {
-//			ImageIcon stegoImage = new ImageIcon(message.getFileData());
-//			jLabelMessage = new JLabel(stegoImage, SwingConstants.LEFT);
-//			String key = contact.addUndecodedMessage(message);
-//			jLabelMessage.setName(key);
+		else
 			try {
-				File file = new File(downloadPath+message.getFileName()+".enc");
-				FileUtils.writeByteArrayToFile(file, message.getFileData());
-				Encryption.decryptFile(file,ENCRYPTION_KEY, "pvt");
-				file.delete();
+				if(message.getSender() != "You") {
+					File file = new File(downloadPath + message.getFileName() + ".enc");
+					FileUtils.writeByteArrayToFile(file, message.getFileData());
+					Encryption.decryptFile(file, ENCRYPTION_KEY, "pvt");
+					file.delete();
+				}
+				jLabelMessage = new JLabel(message.getFileName());
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
-			jLabelMessage = new JLabel(message.getFileName());
-		}
 		if (jLabelMessage != null) {
 			jLabelMessage.setFont(plainMessageFont);
 			contact.addMessageToConversation(jLabelMessage);

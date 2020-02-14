@@ -1,5 +1,10 @@
 package server;
 
+import common.Encryption;
+import common.Message;
+import common.ResultCode;
+import org.apache.commons.io.FileUtils;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -10,11 +15,6 @@ import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.util.Calendar;
 import java.util.LinkedList;
-
-import common.Encryption;
-import common.Message;
-import common.ResultCode;
-import org.apache.commons.io.FileUtils;
 
 public class ClientConnection implements Runnable, UserListener {
 	private User user;
@@ -90,7 +90,6 @@ public class ClientConnection implements Runnable, UserListener {
 		if (obj instanceof Message && (message=(Message)obj).getRecipient() != null) {
 			message.setServerReceivedTime(Calendar.getInstance().toInstant());
 			message.setSender(getUser().getUserName());
-			FileUtils.writeByteArrayToFile(new File("data/files/test.pdf"), message.getFileData());
 			transferMessageToRecipients(message);
 		} else {
 			logListener.logError("receiveMessage() Received invalid message-obj from " + getUser().getUserName());
@@ -343,6 +342,7 @@ public class ClientConnection implements Runnable, UserListener {
 					}
 				}
 				oos.writeInt(result);
+				oos.flush();
 				if(result == ResultCode.ok){
 					KeyPair keyPair = Encryption.doGenkey(userName);
 					transferEncryptionKey(keyPair.getPrivate().getEncoded(), 0);
