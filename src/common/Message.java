@@ -7,17 +7,12 @@ import java.time.Instant;
  * Message lagrar data som är associerad med ett visst meddelande.
  */
 public class Message implements Serializable {
-	public static final int TYPE_TEXT = 0;
-	public static final int TYPE_IMAGE = 1;
-	public static final int TYPE_FILE = 2;
-	private Instant serverReceivedTime;
-	private Instant clientReceivedTime;
-	private String sender;
-	private String recipient;
-	private String filename;
+	public static final int TYPE_TEXT = 0, TYPE_IMAGE = 1, TYPE_FILE = 2;
+	private Instant serverReceivedTime, clientReceivedTime;
+	private String sender, recipient, filename;
 	private boolean isGroupMsg;
 	private int type;
-	private final byte[] fileData;
+	private final byte[] data;
 
 	/**
 	 * Skapar ett Message-objekt.
@@ -25,12 +20,12 @@ public class Message implements Serializable {
 	 * @param isGroupMsg Anger om mottagaren är en grupp.
 	 * @param fileData Ett bild-objekt som innehåller meddeladets payload krypterat med steganografi.
 	 */
-	public Message(String recipient, boolean isGroupMsg, String filename, int type, byte[] fileData) {
+	public Message(String recipient, boolean isGroupMsg, String filename, int type, byte[] data) {
 		this.recipient = recipient;
 		this.isGroupMsg = isGroupMsg;
 		this.type = type;
 		this.filename = filename;
-		this.fileData = fileData;
+		this.data = data;
 	}
 	
 	/**
@@ -98,7 +93,7 @@ public class Message implements Serializable {
 	 * @return Bild-objektet om sådant finns, annars null.
 	 */
 	public byte[] getFileData() {
-		return fileData;
+		return data;
 	}
 
 	public String getFileName() {

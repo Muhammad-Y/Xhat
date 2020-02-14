@@ -1,50 +1,24 @@
 package client.gui;
 
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.Dimension;
-import java.awt.Font;
-import java.awt.GridLayout;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
-import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
+import common.Encryption;
+import common.Message;
+import org.apache.commons.io.FileUtils;
+import sun.swing.DefaultLookup;
 
-import javax.imageio.ImageIO;
-import javax.swing.BorderFactory;
-import javax.swing.DefaultListCellRenderer;
-import javax.swing.DefaultListModel;
-import javax.swing.Icon;
-import javax.swing.ImageIcon;
-import javax.swing.JButton;
-import javax.swing.JFileChooser;
-import javax.swing.JLabel;
-import javax.swing.JList;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTextArea;
-import javax.swing.ListModel;
-import javax.swing.ListSelectionModel;
-import javax.swing.SwingUtilities;
-import javax.swing.UIManager;
-import javax.swing.UnsupportedLookAndFeelException;
+import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
-import javax.swing.filechooser.FileNameExtensionFilter;
-
-import client.Steganography;
-import common.Message;
-import sun.swing.DefaultLookup;
-
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 
 /**
  * En klass som möjliggör för en användare att interagera med systemet 
@@ -71,6 +45,7 @@ public class MainPanel extends JPanel {
 	private JButton btnLeaveGroupChat = new JButton("Leave group");
 	private Font font = new Font("SansSerif", Font.BOLD, 18);
 	private boolean isGroupInFocus;
+	private String encryptionKey;
 	
 	//behövs för fönster med scrollfunktion
 	private DefaultListModel<JLabel> conversationModel = new DefaultListModel<>();
@@ -231,15 +206,6 @@ public class MainPanel extends JPanel {
 		setSystemLookAndFeel();
 		File file = null; //Objekttyp ska ändras efter krav, t.ex. pdf osv. även koden nedan
 		JFileChooser chooser = new JFileChooser();
-		FileNameExtensionFilter filter1 = new FileNameExtensionFilter("jpeg", "jpeg");
- 	    FileNameExtensionFilter filter2 = new FileNameExtensionFilter("png", "png");
- 	    FileNameExtensionFilter filter3 = new FileNameExtensionFilter("jpg", "jpg");
- 	    FileNameExtensionFilter filter4 = new FileNameExtensionFilter("gif", "gif");
- 	    //lägga till fler filter efter krav
- 	    chooser.addChoosableFileFilter(filter1);
- 	    chooser.addChoosableFileFilter(filter2);
- 	    chooser.addChoosableFileFilter(filter3);
- 	    chooser.addChoosableFileFilter(filter4);
  	    
  	    int returnChoice = chooser.showOpenDialog(null);
 		if (returnChoice == JFileChooser.APPROVE_OPTION) {
@@ -397,7 +363,7 @@ public class MainPanel extends JPanel {
 				leaveGroupChat();
 		}
 
-		private void sendTextMessage(){
+		private void sendTextMessage() {
 			mainController.restartDisconnectTimer();
 			JLabel selectedContact = (isGroupInFocus) ? jlistGroupChats.getSelectedValue() : jlistContactList.getSelectedValue();
 			byte[] bytesOfMessage = null;
@@ -408,8 +374,17 @@ public class MainPanel extends JPanel {
 			}
 			if (bytesOfMessage.length > 3 * Math.pow(10, 6))
 				JOptionPane.showMessageDialog(null, "Please write a message consisting of less than 3 MB");
-			else if (selectedContact != null)
-				mainController.sendMessage(selectedContact.getName(), getMessageTxt().getBytes(), "", isGroupInFocus, Message.TYPE_TEXT);
+			else if (selectedContact != null) {
+				File file = new File("temp/file.txt");
+				try {
+					FileUtils.writeByteArrayToFile(file, getMessageTxt().getBytes());
+					File encryptedFile = Encryption.encryptFile(file, getEncryptionKey(selectedContact.getName()), "pub");
+					byte[] data = readFileToByteArray(encryptedFile);
+					mainController.sendMessage(selectedContact.getName(), data, "", isGroupInFocus, Message.TYPE_TEXT);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
 			else
 				JOptionPane.showMessageDialog(null, "Please select a contact or a group.", "Info", JOptionPane.INFORMATION_MESSAGE);
 		}
@@ -420,13 +395,30 @@ public class MainPanel extends JPanel {
 			if (selectedContact != null) {
 				File file = generateSelectFile();
 				if (file != null) {
-					byte[] fileData = readFileToByteArray(file);
-					String filename = file.getName();
-					mainController.sendMessage(selectedContact.getName(), fileData, filename, isGroupInFocus, Message.TYPE_FILE);
+					try {
+						File encryptedFile = Encryption.encryptFile(file, getEncryptionKey(selectedContact.getName()), "pub");
+						byte[] fileData = readFileToByteArray(encryptedFile);
+						String filename = file.getName();
+						mainController.sendMessage(selectedContact.getName(), fileData, filename, isGroupInFocus, Message.TYPE_FILE);
+						new File(file.getPath()+".enc").delete();
+						removeEncryptionKey(selectedContact.getName());
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
 				}
 			} else {
 				JOptionPane.showMessageDialog(null, "Please select a contact or a group.", "Info", JOptionPane.INFORMATION_MESSAGE);
 			}
+		}
+
+		private String getEncryptionKey(String username){
+			String filename = "key/"+username+".pub";
+			mainController.getUserKey(username);
+			return filename;
+		}
+
+		private void removeEncryptionKey(String username){
+			new File("key/"+username+".pub").delete();
 		}
 
 		private void removeContact() {
