@@ -5,13 +5,15 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.Calendar;
 import java.util.LinkedList;
 
 import common.Message;
 import common.ResultCode;
 
-public class ClientConnection implements Runnable, UserListener {
+public class ClientConnectionDB implements Runnable, UserListener {
     private User user;
     private Socket socket;
     private ObjectOutputStream oos;
@@ -22,7 +24,7 @@ public class ClientConnection implements Runnable, UserListener {
     private boolean loggedIn;
     private LogListener logListener;
 
-    public ClientConnection(Socket socket, ClientsManager clientsManager,DBHandler dbh, ThreadPool threadPool, LogListener listener) {
+    public ClientConnectionDB(Socket socket, ClientsManager clientsManager,DBHandler dbh, ThreadPool threadPool, LogListener listener) {
         this.socket = socket;
         this.clientsManager = clientsManager;
         this.dbh = dbh;
@@ -30,7 +32,7 @@ public class ClientConnection implements Runnable, UserListener {
         this.logListener = listener;
         this.loggedIn = false;
         try {
-            socket.setSoTimeout(1000);
+            // socket.setSoTimeout(1000);
             ois = new ObjectInputStream(socket.getInputStream());
             oos = new ObjectOutputStream(socket.getOutputStream());
             threadPool.execute(this);
@@ -80,11 +82,14 @@ public class ClientConnection implements Runnable, UserListener {
     }
 
     private void notifyContacts() {
-        LinkedList<User> contacts = user.getContacts();
-        if (!contacts.isEmpty()) {
-            for (User contact : contacts) {
-                contact.updateContactList(contact);
+        try {
+            ResultSet rs = dbh.getContacts(getUser());
+            while(rs.next()) {
+                if(rs.getString(2) != null)
+                    ServerConnection.getClientThread(rs.getString(1)).transferContactList();
             }
+        }catch (IOException | SQLException e) {
+            e.printStackTrace();
         }
     }
 
@@ -104,23 +109,23 @@ public class ClientConnection implements Runnable, UserListener {
         if (requestObj instanceof String[]) {
             newContactRequest = (String[]) requestObj;
             boolean declineRequest = Boolean.parseBoolean(newContactRequest[1]);
-            User requestedUser = clientsManager.getUser(newContactRequest[0]);
-            if (requestedUser != null && !user.isContactWith(requestedUser)) {
+            String requestedUser = newContactRequest[0]; //User requestedUser = clientsManager.getUser(newContactRequest[0]);
+            if (requestedUser != null /*&& !user.isContactWith(requestedUser)*/) {
                 if (declineRequest) {
-                    this.user.removeContactRequest(requestedUser);
-                    requestedUser.removeContactRequest(this.user);
+                    dbh.removeContactRequest(user.toString(), requestedUser);//this.user.removeContactRequest(requestedUser);
+                    //requestedUser.removeContactRequest(this.user);
                 } else {
-                   if (requestedUser.hasRequestedContactWith(getUser())) {
-                        this.user.addContact(requestedUser);
-                        requestedUser.addContact(getUser());
-                    } else {
+                    // if (requestedUser.hasRequestedContactWith(getUser())) {
+                    dbh.addContact(user.toString(), requestedUser);//this.user.addContact(requestedUser);
+                    //  requestedUser.addContact(getUser());
+                  /*  } else {
                         this.user.addContactRequestTo(requestedUser);
                         requestedUser.addContactRequestFrom(this.user);
                         logListener.logInfo("Added contact request from " + this.user.getUserName() + " to " + requestedUser.getUserName());
                         if (requestedUser.isOnline()) {
                             requestedUser.getClientConnection().newContactRequest(this.user.getUserName());
                         }
-                    }
+                    }*/
                 }
             }
         } else {
@@ -192,7 +197,7 @@ public class ClientConnection implements Runnable, UserListener {
         LinkedList<User> recipients = getRecipients(message);
         if (recipients != null && !recipients.isEmpty()) {
             for (User user : recipients) {
-                ClientConnection clientConnection = user.getClientConnection();
+                ClientConnectionDB clientConnection = ServerConnection.getClientThread(user.toString());
                 if (clientConnection != null) {
                     clientConnection.transferMessage(message);
                 } else {
@@ -221,10 +226,7 @@ public class ClientConnection implements Runnable, UserListener {
      * @throws IOException
      */
     private void transferContactList() throws IOException {
-        String[][] contacts = dbh.getContactsArray(user);//getUser().getContactsArray();
-        for(int i = 0; i < contacts.length; i++) {
-            System.out.println(contacts[i][1]);
-        }
+        String[][] contacts = dbh.getContactsArray(user);
 
         int nbrOfContacts = contacts.length;
         if (nbrOfContacts > 0) {
@@ -236,7 +238,7 @@ public class ClientConnection implements Runnable, UserListener {
     }
 
     private void transferGroupChats() throws IOException {
-        String[][] groups = getUser().getGroupsArray();
+        String[][] groups = dbh.getGroupsArray(user);
         oos.writeObject("GroupChats");
         oos.writeObject(groups);
         oos.flush();
@@ -300,16 +302,17 @@ public class ClientConnection implements Runnable, UserListener {
                 String username, password;
                 username = credentials[0];
                 password = credentials[1];
-                User user = clientsManager.getUser(username);
-                if (user != null && user.checkPassword(password)) {
+                // User user = clientsManager.getUser(username);
+                if (dbh.verifyLogin(username, password)) {//user != null && user.checkPassword(password)) {
                     oos.writeBoolean(true);
                     oos.flush();
-                    this.user = user;
-                    ClientConnection clientConnection = user.getClientConnection();
+                    this.user = new User(username, password); //user;
+                    ClientConnectionDB clientConnection = ServerConnection.getClientThread(user.toString());
                     if (clientConnection != null) {
                         clientConnection.disconnectClient();
                     }
-                    user.setClientConnection(this);
+                    ServerConnection.setThreadName(user.toString(), this);
+                   // user.setClientConnection(this);
                     success = true;
                 } else {
                     logListener.logError("Client login failed: wrong userName or password.");
@@ -337,7 +340,7 @@ public class ClientConnection implements Runnable, UserListener {
                 boolean passwordOk = password.length() > 0 && password.length() <= 20;
                 if (userNameOk && passwordOk) {
                     User newUser = new User(userName, password);
-                    result = clientsManager.addUser(newUser);
+                    result = dbh.addUser(newUser); //.addUser(newUser);
                     if (result == ResultCode.ok) {
                         logListener.logInfo("User registered: " + userName);
                     } else if (result == ResultCode.userNameAlreadyTaken) {
@@ -485,3 +488,4 @@ public class ClientConnection implements Runnable, UserListener {
         }
     }
 }
+

@@ -19,7 +19,7 @@ public class ClientsManager {
 	}
 	
 	public void addTestData() {
-		User testUser1 = new User("Test1", "password");
+		/*User testUser1 = new User("Test1", "password");
 		User testUser2 = new User("Test2", "password");
 		User testUser3 = new User("Test3", "password");
 		User testUser4 = new User("Test4", "password");
@@ -51,7 +51,7 @@ public class ClientsManager {
 		youUser.addContact(testUser2);
 		youUser.addContact(testUser3);
 		youUser.addContact(youUser);
-		System.out.println("Added test data");
+		System.out.println("Added test data");*/
 	}
 	
 	public int addUser(User user) {
@@ -94,7 +94,7 @@ public class ClientsManager {
 				System.out.println("Founder is not contact with member: " + user.getUserName());
 			}
 		}
-		if (success == true) {
+		if (success) {
 			Group newGroup = new Group(groupName, members);
 			groupId = newGroup.getGroupId();
 			groups.put(groupId, newGroup);

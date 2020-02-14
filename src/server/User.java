@@ -162,7 +162,9 @@ public class User implements Serializable {
 	public String getUserName() {
 		return userName;
 	}
-	
+
+	public String getProtectedPassword() { return protectedPassword; }
+
 	/**
 	 * Returnerar true om angivet lösenord är identiskt med User-objektets lösenord.
 	 * @return true om angivet lösenord är identiskt med User-objektets lösenord, annars false.

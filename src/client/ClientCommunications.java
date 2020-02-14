@@ -3,7 +3,7 @@ package client;
 import client.gui.MainController;
 import common.Message;
 import common.ResultCode;
-import org.apache.commons.io.FileUtils;
+//import org.apache.commons.io.FileUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -179,7 +179,7 @@ public class ClientCommunications implements Runnable {
 	
 	private void establishConnection() throws SocketException, IOException {
 		socket = new Socket(ip, port);
-		socket.setSoTimeout(1000);
+		socket.setSoTimeout(8000);
 		oos = new ObjectOutputStream(socket.getOutputStream());
 		ois = new ObjectInputStream(socket.getInputStream());
 	}
