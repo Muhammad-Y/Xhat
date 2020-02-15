@@ -69,6 +69,8 @@ public class ClientCommunications implements Runnable {
 			oos.writeObject("NewGroup");
 			oos.writeObject(newGroup);
 			oos.flush();
+//			byte[] key = (byte[]) ois.readObject();
+//			receiveEncryptionKey(key, newGroup[0], true);
 		} catch (IOException e) {
 			disconnect();
 		}
@@ -239,7 +241,7 @@ public class ClientCommunications implements Runnable {
 			senderContact = isGroupMsg ? data.getGroup(message.getRecipient()) : data.getContact(message.getSender());
 
 			if(senderContact != null) {
-				String senderName = (isGroupMsg == true) ? ((GroupChat)senderContact).getGroupId() : senderContact.getName();
+				String senderName = (isGroupMsg) ? ((GroupChat)senderContact).getGroupId() : senderContact.getName();
 				ClientLogger.logInfo("Received message from: " + senderName);
 				if(mainController.isContactSelected(senderName)) {
 					System.out.println(message.getFileName()+"\n"+message.getType());
@@ -280,14 +282,14 @@ public class ClientCommunications implements Runnable {
 		}
 	}
 
-	private void receiveEncryptionKey(byte[] requestObj, String userName, boolean privateKey){
+	private void receiveEncryptionKey(byte[] requestObj, String name, boolean privateKey){
 		if (requestObj != null) {
 			ClientLogger.logInfo("Received encryption key");
 			try {
 				if(privateKey)
-					FileUtils.writeByteArrayToFile(new File("key/"+ userName+".pvt"), (byte[])requestObj);
+					FileUtils.writeByteArrayToFile(new File("key/"+ name+".pvt"), requestObj);
 				else
-					FileUtils.writeByteArrayToFile(new File("key/"+ userName+".pub"), (byte[])requestObj);
+					FileUtils.writeByteArrayToFile(new File("key/"+ name+".pub"), requestObj);
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
@@ -327,6 +329,7 @@ public class ClientCommunications implements Runnable {
 			ClientLogger.logInfo("Listener started...");
 			String request = "";
 			Object obj;
+			byte[] file;
 			try {
 				while (!Thread.interrupted()) {
 					socket.setSoTimeout(0);
@@ -338,8 +341,13 @@ public class ClientCommunications implements Runnable {
 						switch (request) {
 						case "EncryptionKey":
 							String username = (String) ois.readObject();
-							byte[] file = (byte[]) ois.readObject();
+							file = (byte[]) ois.readObject();
 							receiveEncryptionKey(file, username, false);
+							break;
+						case "GroupKey":
+							String groupID = (String) ois.readObject();
+							file = (byte[]) ois.readObject();
+							receiveEncryptionKey(file, groupID, true);
 							break;
 						case "NewMessage":
 							receiveMessage(ois.readObject());

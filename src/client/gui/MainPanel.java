@@ -262,6 +262,10 @@ public class MainPanel extends JPanel {
 		return txtMessageField.getText();
 	}
 
+//	public String getSelectedGroupID(){
+//		String groupID = jlistGroupChats.get
+//	}
+
 	/**
 	 * tömmer chatfönstrets innehåll
 	 */

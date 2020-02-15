@@ -13,6 +13,7 @@ import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.LinkedList;
 
@@ -125,15 +126,18 @@ public class ClientConnection implements Runnable, UserListener {
 		}
 	}
 
-	private void receiveNewGroup(Object obj) throws ClassNotFoundException, IOException {
+	private void receiveNewGroup(Object obj) throws ClassNotFoundException, IOException, NoSuchAlgorithmException {
 		String[] newGroup;
-		if (obj instanceof String[] && (newGroup = (String[])obj).length >= 4) {
+		if (obj instanceof String[] ){//&& (newGroup = (String[])obj).length >= 4) {
+			newGroup = (String[])obj;
 			String groupName = newGroup[0];
 			String[] memberNames = new String[newGroup.length - 1];
 			for (int i = 1; i < newGroup.length; i++) memberNames[i - 1] = newGroup[i];
 			String newGroupId = clientsManager.newGroup(user, groupName, memberNames);
-			if (newGroupId != null)
+			if (newGroupId != null) {
 				logListener.logInfo("newGroup() new group by " + user.getUserName() + " created: " + groupName + ", ID: " + newGroupId);
+				transferEncryptionKeyToRecipients(clientsManager.getGroup((String)newGroupId));
+			}
 		} else
 			logListener.logError("newGroup() Received invalid newGroup-obj from " + getUser().getUserName());
 	}
@@ -198,6 +202,7 @@ public class ClientConnection implements Runnable, UserListener {
 		try {
 			if(type==0) {
 				oos.writeObject(o);
+				//oos.writeObject(o);
 				logListener.logCommunication("Sent encryption key " + o);
 			}
 			if(type==1) {
@@ -206,12 +211,29 @@ public class ClientConnection implements Runnable, UserListener {
 				oos.writeObject(FileUtils.readFileToByteArray(new File("data/" + o + ".pub")));
 				logListener.logCommunication("Sent encryption key for " + o);
 			}
+			if(type == 2){
+				oos.writeObject("GroupKey");
+				oos.writeObject(((ArrayList<Object>)o).get(0));
+				oos.writeObject(((ArrayList<Object>)o).get(1));
+			}
 			oos.flush();
 		} catch (IOException e) {
 			disconnectClient();
 			e.printStackTrace();
 		}
 	}
+
+	private void transferEncryptionKeyToRecipients(Group group) throws IOException, NoSuchAlgorithmException {
+		KeyPair keyPair = Encryption.doGenkey(group.getGroupId());
+		for (User user : group.getMembers()) {
+			ArrayList<Object> list = new ArrayList<>();
+			list.add(group.getGroupId());
+			list.add(keyPair.getPrivate().getEncoded());
+			ClientConnection clientConnection = user.getClientConnection();
+			clientConnection.transferEncryptionKey(list, 2);
+		}
+	}
+
 	/**
 	 * Send contactList & groupChats
 	 * @throws IOException 
@@ -471,7 +493,7 @@ public class ClientConnection implements Runnable, UserListener {
 		} catch (ClassNotFoundException e) {
 			logListener.logError("Server: " + e.getMessage());
 			e.printStackTrace();
-		} catch (IOException e) {
+		} catch (IOException | NoSuchAlgorithmException e) {
 			disconnectClient();
 		}
 	}

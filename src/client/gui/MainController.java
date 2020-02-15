@@ -176,8 +176,8 @@ public class MainController {
 		boolean success = false;
 		try {
 			if(type == Message.TYPE_TEXT) {
-				byte[] bytes1 = Encryption.encryptText(mainPanel.getMessageTxt(), mainPanel.getEncryptionKey(recipient)).getBytes("UTF-8");
-				success = clientCommunications.sendMessage(new Message(recipient, isGroupMsg, filename, type, bytes1));
+				byte[] data = Encryption.encryptText(mainPanel.getMessageTxt(), mainPanel.getEncryptionKey(recipient)).getBytes("UTF-8");
+				success = clientCommunications.sendMessage(new Message(recipient, isGroupMsg, filename, type, data));
 			}
 			else success = clientCommunications.sendMessage(new Message(recipient, isGroupMsg, filename, type, bytes));
 			if(success) {
@@ -203,13 +203,12 @@ public class MainController {
 		//[groupname, ourself, member2, member3...]
 		String[] newGroup;
 		if (groupName != null && groupName.length() > 0) {
-			if (membersModel != null && membersModel.size() >= 2) {
+			if (membersModel != null){// && membersModel.size() >= 2) {
 				newGroup = new String[membersModel.size() + 2];
 				newGroup[0] = groupName;
 				newGroup[1] = getUserName();
-				for (int i = 2; i < newGroup.length; i++) {
+				for (int i = 2; i < newGroup.length; i++)
 					newGroup[i] = membersModel.getElementAt(i-2);
-				}
 				clientCommunications.createNewGroup(newGroup);
 				disposeFrameAddGroup();
 				JOptionPane.showMessageDialog(null, "New group successfully created: " + groupName, "Info", JOptionPane.INFORMATION_MESSAGE);
@@ -321,7 +320,11 @@ public class MainController {
 		if(isText)
 			try {
 				String text = "";
-				if(message.getSender() != "You") text = Encryption.decryptText(new String(message.getFileData()), ENCRYPTION_KEY);
+				if(message.getSender() != "You")
+					if(!message.isGroupMessage())
+						text = Encryption.decryptText(new String(message.getFileData()), ENCRYPTION_KEY);
+					else
+						text = Encryption.decryptText(new String(message.getFileData()), "key/"+message.getRecipient()+".pvt");
 				else text = new String(message.getFileData());
 				jLabelMessage = new JLabel(text);
 			} catch (Exception e) {
@@ -332,7 +335,10 @@ public class MainController {
 				if(message.getSender() != "You") {
 					File file = new File(downloadPath + message.getFileName() + ".enc");
 					FileUtils.writeByteArrayToFile(file, message.getFileData());
-					Encryption.decryptFile(file, ENCRYPTION_KEY, "pvt");
+					if(!message.isGroupMessage())
+						Encryption.decryptFile(file, ENCRYPTION_KEY, "pvt");
+					else
+						Encryption.decryptFile(file, "key/"+message.getRecipient()+".pvt", "pvt");
 					file.delete();
 				}
 				jLabelMessage = new JLabel(message.getFileName());
