@@ -51,7 +51,8 @@ public class ServerConnection implements Runnable {
 //			clientsManager.addTestData();
 			while (!Thread.interrupted()) {
 				Socket socket = serverSocket.accept();
-				new ClientConnection(socket, clientsManager, dbh, threadPool, logListener);
+				//new ClientConnection(socket, clientsManager, threadPool, logListener);
+				new ClientConnectionDB(socket, clientsManager, dbh, threadPool, logListener);
 			}
 		} catch (IOException e) {
 			logListener.logError("Server error: " + e.getMessage());

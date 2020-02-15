@@ -4,6 +4,7 @@ import client.gui.MainController;
 import common.Encryption;
 import common.Message;
 import common.ResultCode;
+import org.apache.commons.io.FileUtils;
 //import org.apache.commons.io.FileUtils;
 
 import java.io.File;

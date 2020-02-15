@@ -19,7 +19,7 @@ public class ClientsManager {
 	}
 	
 	public void addTestData() {
-		/*User testUser1 = new User("Test1", "password");
+		User testUser1 = new User("Test1", "password");
 		User testUser2 = new User("Test2", "password");
 		User testUser3 = new User("Test3", "password");
 		User testUser4 = new User("Test4", "password");
@@ -40,9 +40,9 @@ public class ClientsManager {
 		testUser2.addContact(testUser1);
 		testUser2.addContact(testUser3);
 		testUser2.addContact(testUser4);
-//		testUser3.addContact(testUser1);
-//		testUser3.addContact(testUser2);
-//		testUser3.addContact(testUser4);
+		testUser3.addContact(testUser1);
+		testUser3.addContact(testUser2);
+		testUser3.addContact(testUser4);
 		testUser4.addContact(testUser1);
 		testUser4.addContact(testUser2);
 		testUser4.addContact(testUser3);
@@ -51,7 +51,7 @@ public class ClientsManager {
 		youUser.addContact(testUser2);
 		youUser.addContact(testUser3);
 		youUser.addContact(youUser);
-		System.out.println("Added test data");*/
+		System.out.println("Added test data");
 	}
 	
 	public int addUser(User user) {

@@ -5,7 +5,6 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.sql.*;
 import java.util.ArrayList;
-
 import common.ResultCode;
 
 public final class DBHandler {
@@ -181,63 +180,33 @@ public final class DBHandler {
     }
 
     public String[][] getGroupsArray(User user) {
-        String[][] groupsArray;
-        try{
-            ResultSet rs = getGroups(user);
-            int rowCount = 0;
-            if (rs.last()) {
-                rowCount = rs.getRow();
-                rs.beforeFirst();
-            }
-            groupsArray = new String[rowCount][2];
-            int i = 0;
-            while(rs.next()) {
-                groupsArray[i][0] = rs.getString(1);
-                groupsArray[i][1] = (rs.getString(2) != null) ? "true" : "false";
-                i++;
-            }
-            close();
-            return contactsArray;
-        }catch(SQLException e) {
-            e.printStackTrace();
-            return null;
-        }
-        synchronized (groups) {
-            int length = groups.size();
-            groupsArray = new String[length][2];
-            Group group;
-            for (int i = 0; i < length; i++) {
-                group = groups.get(i);
-                groupsArray[i][0] = group.getGroupName();
-                groupsArray[i][1] = group.getGroupId();
-            }
-        }
+        String[][] groupsArray = {};
         return groupsArray;
 
     }
 
     public User getUser(String userName) {
-           /* synchronized (users) {
-                return users.get(userName.toLowerCase());
-            }*/
         return null;
     }
 
     public String[] searchUser(String searchString, User fromUser) {
         ArrayList<String> results = new ArrayList<>();
-            /*synchronized (users) {
-                for (User potentialContact : users.values()) {
-                    String userName = potentialContact.getUserName();
-                    if (!potentialContact.equals(fromUser)) {
-                        if (userName.toLowerCase().startsWith(searchString.toLowerCase())) {
-                            if (!fromUser.isContactWith(potentialContact)) {
-                                results.add(userName);
-                            }
-                        }
-                    }
-                }
+        open();
+        try {
+            PreparedStatement pst = conn.
+                    prepareStatement("WITH temp AS (SELECT user_id FROM users WHERE username = (?) " +
+                    "SELECT username FROM users WHERE NOT user_id IN " +
+                    "(SELECT u_id FROM contacts JOIN temp " +
+                    "ON temp.user_id = u_id OR temp.user_id = c_id)");
+            pst.setString(1, fromUser.toString());
+            ResultSet rs = pst.executeQuery();
+            while(rs.next()) {
+                results.add(rs.getString(1));
             }
-            return results.toArray(new String[results.size()]);*/
+            return results.toArray(new String[results.size()]);
+        } catch(SQLException e) {
+            e.printStackTrace();
+        }
         return null;
     }
 
@@ -295,35 +264,6 @@ public final class DBHandler {
         } catch(Exception ex){
             throw new RuntimeException(ex);
         }
-    }
-
-    public void test() {
-        open();
-//        update(Statements.createShifts);
-//        update(getSQLQuery("shifts"));
-        try {
-            PreparedStatement stmt = conn.
-                    prepareStatement("select * from users");
-            //stmt.setInt(1, limit);
-            ResultSet rs = stmt.executeQuery();
-            while (rs.next()) {
-                System.out.println(rs.getInt(1) + " " + rs.getString(2) +
-                        " " + rs.getString(3) + " " + rs.getTimestamp(4) + " " + rs.getTimestamp(5));
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        close();
-    }
-
-    public static void main(String[] args) {
-        DBHandler dbh = new DBHandler();
-
-        User testUser3 = new User("abc", "password");
-        User testUser4 = new User("123", "password");
-        System.out.println(String.format("%s %s", testUser3, testUser4));
-        dbh.addContact(testUser3.toString(), testUser4.toString());
-       // dbh.test();
     }
 }
 

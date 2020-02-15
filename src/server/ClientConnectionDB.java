@@ -275,7 +275,7 @@ public class ClientConnectionDB implements Runnable, UserListener {
     private void transferSearchResults(Object searchObj) throws IOException {
         String searchString;
         if (searchObj instanceof String && (searchString = (String) searchObj).length() >= 2) {
-            String[] results = clientsManager.searchUser(searchString, getUser());
+            String[] results = dbh.searchUser(searchString, getUser());
             oos.writeObject("SearchResult");
             oos.writeObject(results);
             logListener.logInfo("searchUser() transferred search results to: " + user.getUserName());
