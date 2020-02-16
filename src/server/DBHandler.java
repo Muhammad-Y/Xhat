@@ -143,9 +143,9 @@ public final class DBHandler {
         open();
         try {
             PreparedStatement pst = conn.
-                    prepareStatement("select g_id from groupmembers\n" +
-                                    "join users ON groupmembers.u_id = users.user_id\n" +
-                                    "and users.username = (?)",
+                    prepareStatement("SELECT g_id FROM groupmembers " +
+                                    "JOIN users ON groupmembers.u_id = users.user_id " +
+                                    "AND users.username = (?)",
                             ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
             pst.setString(1, user.toString());
             return pst.executeQuery();
@@ -182,7 +182,6 @@ public final class DBHandler {
     public String[][] getGroupsArray(User user) {
         String[][] groupsArray = {};
         return groupsArray;
-
     }
 
     public User getUser(String userName) {
@@ -194,11 +193,13 @@ public final class DBHandler {
         open();
         try {
             PreparedStatement pst = conn.
-                    prepareStatement("WITH temp AS (SELECT user_id FROM users WHERE username = (?) " +
+                    prepareStatement("WITH temp AS (SELECT user_id FROM users WHERE username = (?)) " +
                     "SELECT username FROM users WHERE NOT user_id IN " +
                     "(SELECT u_id FROM contacts JOIN temp " +
-                    "ON temp.user_id = u_id OR temp.user_id = c_id)");
+                    "ON temp.user_id = u_id OR temp.user_id = c_id) " +
+                            "AND username LIKE (?)");
             pst.setString(1, fromUser.toString());
+            pst.setString(2, searchString + '%');
             ResultSet rs = pst.executeQuery();
             while(rs.next()) {
                 results.add(rs.getString(1));
