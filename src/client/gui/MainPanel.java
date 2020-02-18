@@ -2,7 +2,6 @@ package client.gui;
 
 import common.Encryption;
 import common.Message;
-import org.apache.commons.io.FileUtils;
 import sun.swing.DefaultLookup;
 
 import javax.swing.*;
@@ -263,6 +262,10 @@ public class MainPanel extends JPanel {
 		return txtMessageField.getText();
 	}
 
+//	public String getSelectedGroupID(){
+//		String groupID = jlistGroupChats.get
+//	}
+
 	/**
 	 * tömmer chatfönstrets innehåll
 	 */
@@ -338,6 +341,15 @@ public class MainPanel extends JPanel {
 			}
 		}
 	}
+
+	public String getEncryptionKey(String username){
+		mainController.getUserKey(username);
+		return "key/"+username+".pub";
+	}
+
+	private void removeEncryptionKey(String username){
+		new File("key/"+username+".pub").delete();
+	}
 	
 	/**
 	 * inre klass som hanterar händelser för
@@ -372,21 +384,11 @@ public class MainPanel extends JPanel {
 			} catch (UnsupportedEncodingException e) {
 				e.printStackTrace();
 			}
-			if (bytesOfMessage.length > 3 * Math.pow(10, 6))
-				JOptionPane.showMessageDialog(null, "Please write a message consisting of less than 3 MB");
+			if (bytesOfMessage.length > 3 * Math.pow(10, 6))  JOptionPane.showMessageDialog(null, "Please write a message consisting of less than 3 MB");
 			else if (selectedContact != null) {
-				File file = new File("temp/file.txt");
-				try {
-					FileUtils.writeByteArrayToFile(file, getMessageTxt().getBytes());
-					File encryptedFile = Encryption.encryptFile(file, getEncryptionKey(selectedContact.getName()), "pub");
-					byte[] data = readFileToByteArray(encryptedFile);
-					mainController.sendMessage(selectedContact.getName(), data, "", isGroupInFocus, Message.TYPE_TEXT);
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
+				mainController.sendMessage(selectedContact.getName(), bytesOfMessage, "", isGroupInFocus, Message.TYPE_TEXT);
 			}
-			else
-				JOptionPane.showMessageDialog(null, "Please select a contact or a group.", "Info", JOptionPane.INFORMATION_MESSAGE);
+			else JOptionPane.showMessageDialog(null, "Please select a contact or a group.", "Info", JOptionPane.INFORMATION_MESSAGE);
 		}
 
 		private void sendFileMessage() {
@@ -396,8 +398,7 @@ public class MainPanel extends JPanel {
 				File file = generateSelectFile();
 				if (file != null) {
 					try {
-						File encryptedFile = Encryption.encryptFile(file, getEncryptionKey(selectedContact.getName()), "pub");
-						byte[] fileData = readFileToByteArray(encryptedFile);
+						byte[] fileData = readFileToByteArray(Encryption.encryptFile(file, getEncryptionKey(selectedContact.getName()), "pub"));
 						String filename = file.getName();
 						mainController.sendMessage(selectedContact.getName(), fileData, filename, isGroupInFocus, Message.TYPE_FILE);
 						new File(file.getPath()+".enc").delete();
@@ -409,16 +410,6 @@ public class MainPanel extends JPanel {
 			} else {
 				JOptionPane.showMessageDialog(null, "Please select a contact or a group.", "Info", JOptionPane.INFORMATION_MESSAGE);
 			}
-		}
-
-		private String getEncryptionKey(String username){
-			String filename = "key/"+username+".pub";
-			mainController.getUserKey(username);
-			return filename;
-		}
-
-		private void removeEncryptionKey(String username){
-			new File("key/"+username+".pub").delete();
 		}
 
 		private void removeContact() {
