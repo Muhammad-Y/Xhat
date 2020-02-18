@@ -3,24 +3,28 @@ package server;
 import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
+import client.Data;
 import common.Message;
+import server.database.DBHandler;
 
 /**
  * User lagrar data som är associerad med en viss användare.
  */
 public class User implements Serializable {
-	private transient ClientConnection clientConnection;
+	private transient ClientConnectionDB clientConnection;
 	private final String userName;
 	private final String protectedPassword;
 	private List<User> contacts = Collections.synchronizedList(new LinkedList<>());
 	private List<Message> bufferedMessages = Collections.synchronizedList(new LinkedList<>());
 	private List<Group> groups = Collections.synchronizedList(new LinkedList<>());
-	private List<User> contactReqestsFrom = Collections.synchronizedList(new LinkedList<>());
-	private List<User> contactReqestsTo = Collections.synchronizedList(new LinkedList<>());
+	private List<User> contactRequestsFrom = Collections.synchronizedList(new LinkedList<>());
+	private List<User> contactRequestsTo = Collections.synchronizedList(new LinkedList<>());
 	
 	/**
 	 * Skapar en ny User med användarnamet <code>userName</code> och lösenordet <code>password</code>.
@@ -82,45 +86,6 @@ public class User implements Serializable {
 		return messageArray;
 	}
 	
-	public void addContact(User user) {
-		removeContactRequest(user);
-		contacts.add(user);
-		updateContactList(user);
-	}
-	
-	public void updateContactList(User user) {
-		if (clientConnection != null) {
-			clientConnection.updateContactList(user);
-		}
-	}
-	
-	public LinkedList<User> getContacts() {
-		LinkedList<User> contacts = new LinkedList<>();
-		synchronized (contacts) {
-			for (User u : this.contacts) {
-				contacts.add(u);
-			}
-		}
-		return contacts;
-	}
-	
-	public boolean isContactWith(User user) {
-		return contacts.contains(user);
-	}
-	
-	public String[][] getContactsArray() {
-		String[][] contactsArray;
-		synchronized (contacts) {
-			int length = contacts.size();
-			contactsArray = new String[length][2];
-			for (int i = 0; i < length; i++) {
-				contactsArray[i][0] = contacts.get(i).getUserName();
-				contactsArray[i][1] = (contacts.get(i).isOnline()) ? "true" : "false";
-			}
-		}
-		return contactsArray;
-	}
-	
 	public void addGroup(Group group) {
 		groups.add(group);
 		updateGroupsList(group);
@@ -135,9 +100,8 @@ public class User implements Serializable {
 	}
 	
 	private void updateGroupsList(Group group) {
-		if (clientConnection != null) {
+		if (clientConnection != null)
 			clientConnection.updateGroupList(group);
-		}
 	}
 
 	public String[][] getGroupsArray() {
@@ -174,11 +138,11 @@ public class User implements Serializable {
 		return this.protectedPassword.equals(protectedPassword);
 	}
 
-	public ClientConnection getClientConnection() {
+	public ClientConnectionDB getClientConnection() {
 		return this.clientConnection;
 	}
 	
-	public void setClientConnection(ClientConnection clientConnection) {
+	public void setClientConnection(ClientConnectionDB clientConnection) {
 		this.clientConnection = clientConnection;
 	}
 	
@@ -191,36 +155,36 @@ public class User implements Serializable {
 	}
 
 	public void addContactRequestFrom(User user) {
-		if (!contactReqestsFrom.contains(user)) {
-			contactReqestsFrom.add(user);
+		if (!contactRequestsFrom.contains(user)) {
+			contactRequestsFrom.add(user);
 		}
 	}
 	
 	public void addContactRequestTo(User user) {
-		if (!contactReqestsTo.contains(user)) {
-			contactReqestsTo.add(user);
+		if (!contactRequestsTo.contains(user)) {
+			contactRequestsTo.add(user);
 		}
 	}
 	
 	public void removeContactRequest(User user) {
-		contactReqestsFrom.remove(user);
-		contactReqestsTo.remove(user);
+		contactRequestsFrom.remove(user);
+		contactRequestsTo.remove(user);
 	}
 
 	public boolean hasRequestedContactWith(User user) {
-		return contactReqestsTo.contains(user);
+		return contactRequestsTo.contains(user);
 	}
 	
 	public boolean hasContactRequests() {
-		return !contactReqestsFrom.isEmpty();
+		return !contactRequestsFrom.isEmpty();
 	}
 
 	public String[] getContactRequestsArray() {
 		String[] contactRequests;
-		synchronized (contactReqestsFrom) {
-			contactRequests = new String[contactReqestsFrom.size()];
+		synchronized (contactRequestsFrom) {
+			contactRequests = new String[contactRequestsFrom.size()];
 			for (int i = 0; i < contactRequests.length; i++) {
-				contactRequests[i] = contactReqestsFrom.get(i).getUserName();
+				contactRequests[i] = contactRequestsFrom.get(i).getUserName();
 			}
 		}
 		return contactRequests;

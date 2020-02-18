@@ -132,7 +132,7 @@ public class Encryption{
 	 * @return File The decrypted file is returned
 	 * @throws Exception
 	 */
-	public static File decryptFile(File inputFile, String keyPath, String key) throws Exception{
+	public static File decryptFile(File inputFile, String keyPath) throws Exception{
 		File decrypted = null;
 		Cipher cipherRSA = Cipher.getInstance("RSA/ECB/PKCS1Padding");
 		PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(Files.readAllBytes(Paths.get(keyPath)));

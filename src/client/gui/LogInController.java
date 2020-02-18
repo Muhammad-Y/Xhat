@@ -31,11 +31,7 @@ public class LogInController {
 		frameLogIn.setVisible(true);
 	}
 
-	public void disposeLogInPanel() {
-		if (frameLogIn != null) {
-			frameLogIn.dispose();
-		}
-	}
+	public void disposeLogInPanel() {if (frameLogIn != null) frameLogIn.dispose(); }
 	
 	public void showRegisterNewUserPanel() {
 		disposeLogInPanel();
@@ -50,18 +46,11 @@ public class LogInController {
 		frameRegister.setVisible(true);
 	}
 	
-	public void disposeFrameRegister() {
-		if (frameRegister != null) {
-			frameRegister.dispose();
-		}
-	}
+	public void disposeFrameRegister() { if (frameRegister != null) frameRegister.dispose();}
 
 	public void login(String userName, String password) {
-		if (clientCommunications.login(userName, password)) {
-			disposeLogInPanel();
-		} else {
-			JOptionPane.showMessageDialog(null, "Login failed", "Failure", JOptionPane.ERROR_MESSAGE);
-		}
+		if (clientCommunications.login(userName, password)) disposeLogInPanel();
+		else JOptionPane.showMessageDialog(null, "Login failed", "Failure", JOptionPane.ERROR_MESSAGE);
 	}
 
 	public void register(String userName, String password, String passwordRepeat) {
@@ -73,31 +62,15 @@ public class LogInController {
 				showLogInPanel(userName, "");
 			} else {
 				String errorMsg;
-				if (result == ResultCode.wrongCredentials) {
-					errorMsg = "Registration failed: Username and password not accepted.";
-				} else if (result == ResultCode.wrongUsernameFormat) {
-					errorMsg = "Registration failed: Username has wrong format.";
-				} else if (result == ResultCode.wrongPasswordFormat) {
-					errorMsg = "Registration failed: Password has wrong format.";
-				} else if (result == ResultCode.userNameAlreadyTaken) {
-					errorMsg = "Registration failed: Username already taken.";
-				} else {
-					errorMsg = "Registration failed.";
-				}
+				if (result == ResultCode.wrongCredentials) errorMsg = "Registration failed: Username and password not accepted.";
+				else if (result == ResultCode.wrongUsernameFormat) errorMsg = "Registration failed: Username has wrong format.";
+				else if (result == ResultCode.wrongPasswordFormat) errorMsg = "Registration failed: Password has wrong format.";
+				else if (result == ResultCode.userNameAlreadyTaken)errorMsg = "Registration failed: Username already taken.";
+				else errorMsg = "Registration failed.";
 				ClientLogger.logError(errorMsg);
 				JOptionPane.showMessageDialog(null, errorMsg, "Error", JOptionPane.ERROR_MESSAGE);
 			}
-		} else {
-			JOptionPane.showMessageDialog(null, "Passwords does not match", "Error", JOptionPane.ERROR_MESSAGE);
 		}
-	}
-	
-	private boolean hasSpecialCharacters(String string) {
-		for(Character c : string.toCharArray()) {
-			if (!Character.isLetterOrDigit(c)) {
-				return true;
-			}
-		}
-		return false;
+		else JOptionPane.showMessageDialog(null, "Passwords does not match", "Error", JOptionPane.ERROR_MESSAGE);
 	}
 }

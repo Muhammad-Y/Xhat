@@ -182,14 +182,13 @@ public final class DBHandler {
     }
 
     public String[][] getGroupsArray(String username) throws SQLException {
-        String[][] groupsArray;
         ResultSet rs = getGroups(username);
         int rowCount = 0;
-        if (rs.last()) {
-            rowCount = rs.getRow();
-            rs.beforeFirst();
+        while(rs.next()) {
+            rowCount++;
         }
-        groupsArray = new String[rowCount][2];
+        rs.beforeFirst();
+        String[][] groupsArray = new String[rowCount][2];
         int i = 0;
         while(rs.next()) {
             groupsArray[i][0] = rs.getString(2);
@@ -197,6 +196,22 @@ public final class DBHandler {
             i++;
         }
         return groupsArray;
+    }
+
+    public void addGroup(String groupname, String[] members){
+        try {
+            PreparedStatement pst = conn.prepareStatement(Statements.insertIntoGroups);
+            pst.setString(1, groupname);
+            pst.executeQuery();
+            for(String member : members) {
+                pst = conn.prepareStatement(Statements.addGroupMember);
+                pst.setString(1, groupname);
+                pst.setString(2, member);
+                pst.executeQuery();
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 
     public String[] searchUser(String searchString, User fromUser) {

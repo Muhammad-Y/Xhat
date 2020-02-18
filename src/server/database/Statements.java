@@ -54,19 +54,19 @@ public class Statements {
             "INSERT INTO groups (groupname) VALUES (?)";
 
     static final String addGroupMember =
-            "INSERT INTO groupmembers VALUES (?,?)";
+            "INSERT INTO groupmembers VALUES (" +
+                    "(select group_id from groups where groupname = (?)), " +
+                    "(select user_id from users where username = (?))" +
+                    ")";
 
     static final String removeGroupMember =
             "DELETE FROM groupmembers WHERE u_id = (?)";
 
     static final String getGroupsAndMembers =
-            "WITH temp AS (SELECT groupmembers.g_id FROM groupmembers " +
-                    "JOIN users ON groupmembers.u_id = users.user_id " +
-                    "AND users.username = (?)) " +
-                    "SELECT g.group_id, g.groupname, u.username FROM temp " +
-                    "JOIN groupmembers AS gm ON temp.g_id = gm.g_id " +
-                    "JOIN users AS u ON u.user_id = gm.u_id " +
-                    "JOIN groups AS g ON g.group_id = gm.g_id";
+            "select group_id, groupname from groups " +
+                    "inner join groupmembers on groups.group_id=groupmembers.g_id " +
+                    "inner join users on groupmembers.u_id=users.user_id " +
+                    "where users.username (?)";
 
     static final String getPendingContactRequest =
             "SELECT 1 FROM contactrequests WHERE to_id = (?) AND from_id = (?)";

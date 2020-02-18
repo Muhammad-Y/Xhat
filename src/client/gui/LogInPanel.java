@@ -101,18 +101,12 @@ public class LogInPanel extends JPanel {
 		return String.valueOf(txtPassword.getPassword());
 	}
 
-	public void setPassword(String string) {
-		//SwingUtilities
-		txtPassword.setText(string);
-	}
+	public void setPassword(String string) { txtPassword.setText(string); }
 
 	private class ButtonListener implements ActionListener {
 		public void actionPerformed(ActionEvent e) {
-			if(e.getSource() == btnLogIn) {
-				logInController.login(getUsername(), getPassword());
-			} else if (e.getSource() == btnRegister) {
-				logInController.showRegisterNewUserPanel();
-			}
+			if(e.getSource() == btnLogIn) logInController.login(getUsername(), getPassword());
+			else if (e.getSource() == btnRegister) logInController.showRegisterNewUserPanel();
 		}
 	}
 	
@@ -120,17 +114,5 @@ public class LogInPanel extends JPanel {
 	public void addNotify() {
 		super.addNotify();
 		SwingUtilities.getRootPane(btnLogIn).setDefaultButton(btnLogIn);
-	}
-
-	//test --> kontrollera utseende för GUI
-	public static void main(String[] args) {
-		LogInPanel panel = new LogInPanel(null, "", "");
-		JFrame frameLogIn = new JFrame("Sign in");
-		frameLogIn.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		frameLogIn.setResizable(false);
-		frameLogIn.add(panel);
-		frameLogIn.pack();
-		frameLogIn.setLocationRelativeTo(null);
-		frameLogIn.setVisible(true);
 	}
 }

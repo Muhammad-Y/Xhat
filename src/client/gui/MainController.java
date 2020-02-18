@@ -15,7 +15,6 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 public class MainController {
-	private Steganography stego = new Steganography();
 	private DefaultListModel<JLabel> groupsModel = new DefaultListModel<>(); //Måste synkroniseras
 	private DefaultListModel<JLabel> contactsModel = new DefaultListModel<>();//Måste synkroniseras
 	private DefaultListModel<String> resultsModel = new DefaultListModel<>();
@@ -137,12 +136,8 @@ public class MainController {
 			boolean isOnline = contact.isOnline();
 			String contactName = contact.getName();
 			jLabelContact.setName(contactName);
-			if (isOnline == true) {
-				jLabelContact.setForeground(new Color(0, 128, 0));
-			}
-			if (contactInFocus != null && contactName.equals(contactInFocus.getName())) {
-				mainPanel.setOtherUserStatus(isOnline);
-			}
+			if (isOnline) jLabelContact.setForeground(new Color(0, 128, 0));
+			if (contactInFocus != null && contactName.equals(contactInFocus.getName())) mainPanel.setOtherUserStatus(isOnline);
 			if (contact.hasUnreadMessages()) {
 				jLabelContact.setText("*" + contactName);
 				jLabelContact.setFont(boldContactFont);
@@ -288,35 +283,8 @@ public class MainController {
 
 	public boolean isContactSelected(String contactName) {
 		boolean isSelected = false;
-		if(contactInFocus != null) {
-			isSelected = contactInFocus.getName().equals(contactName);
-		}
+		if(contactInFocus != null) isSelected = contactInFocus.getName().equals(contactName);
 		return isSelected;
-	}
-	
-	private JLabel decodeMessage(Message message) {
-		JLabel jLabelMessage = null;
-		BufferedImage stegoImage = Steganography.byteArrayToImage(message.getFileData());
-		if (stegoImage != null) {
-			byte[] payloadData = stego.decode(stegoImage);
-			int messageType = message.getType();
-			if(messageType == Message.TYPE_TEXT) {
-				String payloadText = new String(payloadData);
-				jLabelMessage = new JLabel(message.getSender() + ": " + payloadText);
-			} else if (messageType == Message.TYPE_IMAGE) {
-				BufferedImage image = Steganography.byteArrayToImage(payloadData);
-				ImageIcon payloadImage = new ImageIcon(image);
-				//TODO: return 2 jlabels, one for sender-string and one for image.
-//				JLabel jLabelSender = new JLabel(message.getSender() + ": ");
-				jLabelMessage = new JLabel(payloadImage, SwingConstants.LEFT);
-			} else {
-				//TODO: Handle files
-				jLabelMessage = new JLabel(message.getSender() + ": Itsa filee");
-			}
-		} else {
-			System.out.println("Message decode error");
-		}
-		return jLabelMessage;
 	}
 
 	public void addMessageToConversation(Contact contact, Message message, boolean isText) {
@@ -325,10 +293,8 @@ public class MainController {
 			try {
 				String text = "";
 				if(message.getSender() != "You")
-					if(!message.isGroupMessage())
-						text = Encryption.decryptText(new String(message.getFileData()), ENCRYPTION_KEY);
-					else
-						text = Encryption.decryptText(new String(message.getFileData()), "key/"+message.getRecipient()+".pvt");
+					if(!message.isGroupMessage()) text = Encryption.decryptText(new String(message.getFileData()), ENCRYPTION_KEY);
+					else text = Encryption.decryptText(new String(message.getFileData()), "key/"+message.getRecipient()+".pvt");
 				else text = new String(message.getFileData());
 				jLabelMessage = new JLabel(text);
 			} catch (Exception e) {
@@ -339,10 +305,8 @@ public class MainController {
 				if(message.getSender() != "You") {
 					File file = new File(downloadPath + message.getFileName() + ".enc");
 					FileUtils.writeByteArrayToFile(file, message.getFileData());
-					if(!message.isGroupMessage())
-						Encryption.decryptFile(file, ENCRYPTION_KEY, "pvt");
-					else
-						Encryption.decryptFile(file, "key/"+message.getRecipient()+".pvt", "pvt");
+					if(!message.isGroupMessage()) Encryption.decryptFile(file, ENCRYPTION_KEY);
+					else Encryption.decryptFile(file, "key/"+message.getRecipient()+".pvt");
 					file.delete();
 				}
 				jLabelMessage = new JLabel(message.getFileName());
@@ -355,54 +319,7 @@ public class MainController {
 			mainPanel.scrollDownConversation();
 		}
 	}
-	
-	private JLabel[] splitMessage(String messageText, String sender) {
-		int spaceIndex = 0;
-		String split = null;
-		JLabel jLabelMessage;
-		if(messageText.length() > 1) {
-			
-			for(int i = 0; i < messageText.length(); i++) {
-				if(i != 0 && i % 10 == 0) {
-					System.out.println("Nu splittar vi!");
-					spaceIndex = messageText.lastIndexOf(' ', i);
-					split = messageText.substring(i, spaceIndex);
-					if (i <= 100) {
-//						jLabelMessage = new JLabel(message.getSender() + ": " + split);
-					} else {
-						jLabelMessage = new JLabel(split);
-					}
-//					contact.addMessageToConversation(jLabelMessage);
-				}
-			}
-			split = messageText.substring(spaceIndex, messageText.length());
-			jLabelMessage = new JLabel(split);
-//			contact.addMessageToConversation(jLabelMessage);
-			
-		}
-		return null;
-	}
-	
-	public void decodeAndReplaceMessageInConversation(int messageIndex, boolean isGroup) {
-		String contactInFocusIdentifier = contactInFocus.getName();
-		Contact contact = (isGroup) ? data.getGroup(contactInFocusIdentifier) : data.getContact(contactInFocusIdentifier);
-		if (contact != null) {
-			DefaultListModel<JLabel> conversationModel = contact.getConversation();
-			JLabel selectedMessage = conversationModel.getElementAt(messageIndex);
-			if (selectedMessage != null) {
-				String selectedMessageKey = selectedMessage.getName();
-				Message undecodedMessage = contact.popUndecodedMessage(selectedMessageKey);
-				if (undecodedMessage != null) {
-					JLabel decodedMessage = decodeMessage(undecodedMessage);
-					if (decodedMessage != null) {
-						decodedMessage.setFont(plainMessageFont);
-						conversationModel.set(messageIndex, decodedMessage);
-					}
-				}
-			}
-		}
-	}
-	
+
 	public void disconnected(String message) {
 		SwingUtilities.invokeLater(() -> {
 			disposeFrameAddContact();
@@ -415,11 +332,9 @@ public class MainController {
 	
 	public void searchContact(String searchString) {
 		resultsModel.clear();
-		for (String contactName : data.getContactKeys()) {
-			if (contactName.toLowerCase().startsWith(searchString.toLowerCase())) {
+		for (String contactName : data.getContactKeys())
+			if (contactName.toLowerCase().startsWith(searchString.toLowerCase()))
 				resultsModel.addElement(contactName);
-			}
-		}
 	}
 
 	public void searchUser(String searchString) {
@@ -429,29 +344,24 @@ public class MainController {
 		if (contactServer) {
 			this.lastSearchString = searchString.substring(0, 2);
 			clientCommunications.searchUser(searchString);
-		} else if (filterLastResults) {
-			resultsModel.clear();
-			for (String contactName : searchResults) {
-				if (contactName.toLowerCase().startsWith(searchString.toLowerCase())) {
-					resultsModel.addElement(contactName);
-				}
-			}
-		} else {
-			resultsModel.clear();
 		}
+		else if (filterLastResults) {
+			resultsModel.clear();
+			for (String contactName : searchResults)
+				if (contactName.toLowerCase().startsWith(searchString.toLowerCase()))
+					resultsModel.addElement(contactName);
+		}
+		else resultsModel.clear();
 	}
 
 	public void updateSearchResults(String[] searchResults) {
 		this.searchResults = searchResults;
 		resultsModel.clear();
-		for (String contactName : searchResults) {
-			resultsModel.addElement(contactName);
-		}
+		for (String contactName : searchResults) resultsModel.addElement(contactName);
 	}
 
 	public void sendNewContactRequest(String userName, boolean decline) {
-		String[] requestObj = new String[]{userName, Boolean.toString(decline)};
-		clientCommunications.sendNewContactRequest(requestObj);
+		clientCommunications.sendNewContactRequest(new String[]{userName, Boolean.toString(decline)});
 	}
 
 	public void notifyNewContactRequest(String requestFromUserName) {
@@ -459,11 +369,8 @@ public class MainController {
 		int choice = JOptionPane.showOptionDialog(null, requestFromUserName + 
 				" wants to add you as a contact. Do you accept?", "Contact Request",
 				JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[1]);
-		if (choice == 0) {
-			sendNewContactRequest(requestFromUserName, false);
-		} else {
-			sendNewContactRequest(requestFromUserName, true);
-		}
+		if (choice == 0) sendNewContactRequest(requestFromUserName, false);
+		else sendNewContactRequest(requestFromUserName, true);
 	}
 	
 

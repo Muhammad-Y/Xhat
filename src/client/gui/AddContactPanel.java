@@ -79,21 +79,11 @@ public class AddContactPanel extends JPanel {
 		mainPanel.add(southPanel, BorderLayout.SOUTH);
 		add(mainPanel);
 	}
-	
+
 	public String getUserSearch() {
 		return txtSearch.getText();
 	}
-	
-	public void setUserSearch(String string) {
-		txtSearch.setText(string);
-	}
-	
-	//behöver metod för att hämta värdet för innehållet i resultatet från sökningen
-	
-	//behöver metod för att sätta värdet för innehållet i resultatet från sökningen
 
-	//lägga till funktion för vad som ska hända om man trycker på knappar
-	
 	private class ButtonListener implements ActionListener {
 		public void actionPerformed(ActionEvent e) {
 			if(e.getSource() == btnAdd) {
@@ -103,39 +93,22 @@ public class AddContactPanel extends JPanel {
 					mainController.disposeFrameAddContact();
 					JOptionPane.showMessageDialog(null, "A contact request has been sent to " + selectedUser);
 				}
-			} else if(e.getSource() == btnCancel) {
-				mainController.disposeFrameAddContact();
 			}
+			else if(e.getSource() == btnCancel) mainController.disposeFrameAddContact();
 		}
 	}
-	
 	private class ResultListener implements DocumentListener {
 		@Override
 		public void insertUpdate(DocumentEvent e) {
 			mainController.searchUser(getUserSearch());
 		}
-
 		@Override
 		public void removeUpdate(DocumentEvent e) {
 			mainController.searchUser(getUserSearch());
 		}
-
 		@Override
 		public void changedUpdate(DocumentEvent e) {
 			System.out.println("changedUpdate()");
 		}
-		
 	}
-	
-	// test --> kontrollera utseende för GUI
-//	public static void main(String[] args) {
-//		AddContactPanel panel = new AddContactPanel(null);
-//		JFrame frameAddContact = new JFrame("Add contact");
-//		frameAddContact.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-//		frameAddContact.setResizable(false);
-//		frameAddContact.add(panel);
-//		frameAddContact.pack();
-//		frameAddContact.setLocationRelativeTo(null);
-//		frameAddContact.setVisible(true);
-//	}
 }

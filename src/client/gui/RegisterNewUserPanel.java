@@ -94,18 +94,11 @@ public class RegisterNewUserPanel extends JPanel {
 	public String getPasswordRepeat() {
 		return String.valueOf(txtPasswordRepeat.getPassword());
 	}
-	
-	public void setPasswordRepeat(String string) {
-		txtPasswordRepeat.setText(string);
-	}
-	
+
 	private class ButtonListener implements ActionListener {
 		public void actionPerformed(ActionEvent e) {
-			if (e.getSource() == btnRegister) {
-				logInController.register(getUsername(), getPassword(), getPasswordRepeat());
-			} else if(e.getSource() == btnCancel) {
-				logInController.showLogInPanel("", "");
-			}
+			if (e.getSource() == btnRegister) logInController.register(getUsername(), getPassword(), getPasswordRepeat());
+			else if(e.getSource() == btnCancel) logInController.showLogInPanel("", "");
 		}
 	}
 
@@ -114,16 +107,4 @@ public class RegisterNewUserPanel extends JPanel {
         super.addNotify();
         SwingUtilities.getRootPane(btnRegister).setDefaultButton(btnRegister);
     }
-
-	// test --> kontrollera utseende för GUI
-	public static void main(String[] args) {
-		RegisterNewUserPanel panel = new RegisterNewUserPanel(null);
-		JFrame frameLogIn = new JFrame("Sign in");
-		frameLogIn.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		frameLogIn.setResizable(false);
-		frameLogIn.add(panel);
-		frameLogIn.pack();
-		frameLogIn.setLocationRelativeTo(null);
-		frameLogIn.setVisible(true);
-	}
 }

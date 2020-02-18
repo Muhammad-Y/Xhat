@@ -118,38 +118,19 @@ public class AddGroupChatPanel extends JPanel {
 	public String getGroupChatName() {
 		return txtGroupChatName.getText();
 	}
-	
-	public void setGroupChatName(String string) {
-		txtGroupChatName.setText(string);
-	}
-	
+
 	public String getUserSearch() {
 		return txtSearch.getText();
 	}
-	
-	public void setUserSearch(String string) {
-		txtSearch.setText(string);
-	}
-	
-	//behöver metod för att hämta värdet för innehållet i resultatet från sökningen
-	
-	//behöver metod för att sätta värdet för innehållet i resultatet från sökningen
-
-	//lägga till funktion för vad som ska hända om man trycker på knappar
 	
 	private class ButtonListener implements ActionListener {
 		public void actionPerformed(ActionEvent e) {
 			if (e.getSource() == btnAdd) {
 				String selectedContact = jlistSearchResult.getSelectedValue();
-				if (selectedContact != null && !membersModel.contains(selectedContact)) {
-					membersModel.addElement(selectedContact);
-				}
-			} else if(e.getSource() == btnCreate) {
-				String groupName = getGroupChatName();
-				mainController.createNewGroup(groupName, membersModel);
-			} else if(e.getSource() == btnCancel) {
-				mainController.disposeFrameAddGroup();
+				if (selectedContact != null && !membersModel.contains(selectedContact)) membersModel.addElement(selectedContact);
 			}
+			else if(e.getSource() == btnCreate) mainController.createNewGroup(getGroupChatName(), membersModel);
+			else if(e.getSource() == btnCancel) mainController.disposeFrameAddGroup();
 		}
 	}
 	
@@ -158,28 +139,13 @@ public class AddGroupChatPanel extends JPanel {
 		public void insertUpdate(DocumentEvent e) {
 			mainController.searchContact(getUserSearch());
 		}
-
 		@Override
 		public void removeUpdate(DocumentEvent e) {
 			mainController.searchContact(getUserSearch());
 		}
-
 		@Override
 		public void changedUpdate(DocumentEvent e) {
 			System.out.println("changedUpdate()");
 		}
-		
-	}
-	
-	// test --> kontrollera utseende för GUI
-	public static void main(String[] args) {
-		AddGroupChatPanel panel = new AddGroupChatPanel(null,new DefaultListModel<String>());
-		JFrame frameAddGroup = new JFrame("Add group chat");
-		frameAddGroup.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-		frameAddGroup.setResizable(false);
-		frameAddGroup.add(panel);
-		frameAddGroup.pack();
-		frameAddGroup.setLocationRelativeTo(null); 
-		frameAddGroup.setVisible(true);
 	}
 }

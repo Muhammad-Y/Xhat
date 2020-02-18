@@ -70,9 +70,9 @@ public class ClientCommunications implements Runnable {
 			oos.writeObject("NewGroup");
 			oos.writeObject(newGroup);
 			oos.flush();
-//			byte[] key = (byte[]) ois.readObject();
-//			receiveEncryptionKey(key, newGroup[0], true);
-		} catch (IOException e) {
+			byte[] key = (byte[]) ois.readObject();
+			receiveEncryptionKey(key, newGroup[0], true);
+		} catch (IOException | ClassNotFoundException e) {
 			disconnect();
 		}
 	}
@@ -198,6 +198,7 @@ public class ClientCommunications implements Runnable {
 	private void receiveContactList(Object contactsObj) throws ClassNotFoundException, IOException {
 		if (contactsObj instanceof String[][]) {
 			String[][] contacts = (String[][])contactsObj;
+			data.removeContacts(contacts);
 			for (int i = 0; i < contacts.length; i++) {
 				String contactName = contacts[i][0];
 				boolean isOnline = Boolean.parseBoolean(contacts[i][1]);
