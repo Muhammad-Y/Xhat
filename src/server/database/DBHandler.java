@@ -208,7 +208,7 @@ public final class DBHandler {
             pst.setString(1, fromUser.toString());
             pst.setString(2, searchString + '%');
             ResultSet rs = pst.executeQuery();
-            while(rs.next() && rs.getString(1) != fromUser.toString()) {
+            while(rs.next()) {
                 results.add(rs.getString(1));
             }
             return results.toArray(new String[results.size()]);
