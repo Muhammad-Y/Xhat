@@ -1,17 +1,22 @@
 package server;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
+import java.security.KeyPair;
+import java.security.NoSuchAlgorithmException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Calendar;
 import java.util.LinkedList;
 
+import common.Encryption;
 import common.Message;
 import common.ResultCode;
+import org.apache.commons.io.FileUtils;
 import server.database.DBHandler;
 
 public class ClientConnectionDB implements Runnable, UserListener {
@@ -109,33 +114,33 @@ public class ClientConnectionDB implements Runnable, UserListener {
         String[] newContactRequest;
         if (requestObj instanceof String[]) {
             newContactRequest = (String[]) requestObj;
-            System.out.println(newContactRequest[0]+" "+newContactRequest[1]);
             boolean declineRequest = Boolean.parseBoolean(newContactRequest[1]);
             String requestedUser = newContactRequest[0];
             dbh.open();
             try {
                 if (dbh.checkUsername(requestedUser).next()) {
                     if (declineRequest) {
-                        dbh.removeContactRequest(requestedUser, user.toString()); //requestedUser.removeContactRequest(this.user);
+                        dbh.removeContactRequest(requestedUser, user.toString());
                     } else {
-                        System.out.println("Pending result: " + dbh.getPendingContactRequest(requestedUser, user.toString()).next());
-                        if (dbh.getPendingContactRequest(user.toString(), requestedUser).next()) { //  requestedUser.hasRequestedContactWith(getUser())) {
-                            dbh.addContact(user.toString(), requestedUser);//this.user.addContact(requestedUser);
+                        if (dbh.getPendingContactRequest(user.toString(), requestedUser).next()) {
+                            dbh.addContact(user.toString(), requestedUser);
                             dbh.removeContactRequest(user.toString(), requestedUser);
-                            updateContactList(user);
-                           // notifyRequester(requestedUser);
+                            transferContactList();
+                            ClientConnectionDB cc = ServerConnection.getClientThread(requestedUser);
+                            if (cc != null) {
+                                cc.transferContactList();
+                            }
                         } else {
-                            dbh.addContactRequest(requestedUser, user.toString()); //user.addContactRequestTo(requestedUser);
-                            // requestedUser.addContactRequestFrom(this.user);
+                            dbh.addContactRequest(requestedUser, user.toString());
                             logListener.logInfo("Added contact request from " + user.toString() + " to " + requestedUser);
                             ClientConnectionDB cc = ServerConnection.getClientThread(requestedUser);
                             if (cc != null) {
-                                cc.newContactRequest(user.toString());
+                                cc.transferContactRequest(user.toString());
                             }
                         }
                     }
                 }
-            } catch (SQLException e) {
+            } catch (SQLException | IOException e) {
                 e.printStackTrace();
             }
             dbh.close();
@@ -144,6 +149,10 @@ public class ClientConnectionDB implements Runnable, UserListener {
         }
     }
 
+    /**
+     * Uppdaterar INTE kontaktlistorna i nuläget
+     * @param contactObj
+     */
     private void receiveRemoveContact(Object contactObj) {
         if (contactObj instanceof String) {
             dbh.open();
@@ -151,9 +160,12 @@ public class ClientConnectionDB implements Runnable, UserListener {
                 dbh.removeContact(user.toString(), (String)contactObj);
                 dbh.removeContact((String)contactObj, user.toString());
                 logListener.logInfo("receiveRemoveContact() " + user.toString() + " removed " + (String)contactObj + " from contacts");
-                updateContactList(user);
-                notifyContacts();
-            } catch (SQLException e) {
+                transferContactList();
+                ClientConnectionDB cc = ServerConnection.getClientThread((String)contactObj);
+                if (cc != null) {
+                    cc.transferContactList();
+                }
+            } catch (SQLException | IOException e) {
                 e.printStackTrace();
             }
             dbh.close();
@@ -297,7 +309,6 @@ public class ClientConnectionDB implements Runnable, UserListener {
         } catch (SQLException e) { e.printStackTrace(); }
         dbh.close();
         if (contactRequests != null) {
-            System.out.println("contactRequests.length == " + contactRequests.length);
             for (String userName : contactRequests) {
                 transferContactRequest(userName);
             }
@@ -340,16 +351,15 @@ public class ClientConnectionDB implements Runnable, UserListener {
                 username = credentials[0];
                 password = credentials[1];
                 // User user = clientsManager.getUser(username);
-                if (dbh.verifyLogin(username, password)) {//user != null && user.checkPassword(password)) {
+                if (dbh.verifyLogin(username, password)) {
                     oos.writeBoolean(true);
                     oos.flush();
-                    this.user = new User(username, password); //user;
+                    this.user = new User(username, password);
                     ClientConnectionDB clientConnection = ServerConnection.getClientThread(user.toString());
                     if (clientConnection != null) {
                         clientConnection.disconnectClient();
                     }
                     ServerConnection.setThreadName(user.toString(), this);
-                    // user.setClientConnection(this);
                     success = true;
                 } else {
                     logListener.logError("Client login failed: wrong userName or password.");
@@ -377,7 +387,13 @@ public class ClientConnectionDB implements Runnable, UserListener {
                 boolean passwordOk = password.length() > 0 && password.length() <= 20;
                 if (userNameOk && passwordOk) {
                     User newUser = new User(userName, password);
-                    result = dbh.registerNewUser(newUser);
+                    dbh.open();
+                    try {
+                        result = dbh.registerNewUser(newUser);
+                    } catch (SQLException e) {
+                        e.printStackTrace();
+                    }
+                    dbh.close();
                     if (result == ResultCode.ok) {
                         logListener.logInfo("User registered: " + userName);
                     } else if (result == ResultCode.userNameAlreadyTaken) {
@@ -390,19 +406,40 @@ public class ClientConnectionDB implements Runnable, UserListener {
                     } else if (!userNameOk) {
                         logListener.logError("Registration failed: Username has wrong format.");
                         result = ResultCode.wrongUsernameFormat;
-                    } else if (!passwordOk) {
+                    } else {
                         logListener.logError("Registration failed: Password has wrong format.");
                         result = ResultCode.wrongPasswordFormat;
                     }
                 }
-
                 oos.writeInt(result);
-                oos.flush();
+                if (result == ResultCode.ok) {
+                    KeyPair keyPair = Encryption.doGenkey(userName);
+                    transferEncryptionKey(keyPair.getPrivate().getEncoded(), 0);
+                }
             } else {
                 logListener.logError("register() Received non-string[] credentials from client.");
             }
-        } catch (IOException e) {
+        } catch (IOException | NoSuchAlgorithmException e) {
             logListener.logError("Client registration timeout");
+        }
+    }
+
+    private void transferEncryptionKey(Object o, int type) {
+        try {
+            if (type == 0) {
+                oos.writeObject(o);
+                logListener.logCommunication("Sent encryption key " + o);
+            }
+            if (type == 1) {
+                oos.writeObject("EncryptionKey");
+                oos.writeObject(o);
+                oos.writeObject(FileUtils.readFileToByteArray(new File("data/" + o + ".pub")));
+                logListener.logCommunication("Sent encryption key for " + o);
+            }
+            oos.flush();
+        } catch (IOException e) {
+            disconnectClient();
+            e.printStackTrace();
         }
     }
 
@@ -478,7 +515,7 @@ public class ClientConnectionDB implements Runnable, UserListener {
                     logListener.logError("Received non-string request from " + socket.getInetAddress().getHostAddress());
                 }
             }
-            if (loggedIn == true) {
+            if (loggedIn) {
                 String request = "";
                 Object obj;
                 socket.setSoTimeout(50);
@@ -509,6 +546,9 @@ public class ClientConnectionDB implements Runnable, UserListener {
                                 break;
                             case "RemoveContact":
                                 receiveRemoveContact(ois.readObject());
+                                break;
+                            case "UserKey":
+                                transferEncryptionKey(ois.readObject(), 1);
                                 break;
                             default:
                                 logListener.logError("Unknown request");

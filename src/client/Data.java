@@ -19,6 +19,8 @@ public class Data {
 	public void addContact(Contact contact) {
 		contacts.put(contact.getName(), contact);
 	}
+
+	public void removeContact(Contact contact) { contacts.remove(contact.getName()); }
 	
 	public Contact getContact(String contactName) {
 		return contacts.get(contactName);
@@ -28,9 +30,7 @@ public class Data {
 		return contacts.containsKey(contactName);
 	}
 	
-	public Collection<Contact> getContacts() {
-		return contacts.values();
-	}
+	public Collection<Contact> getContacts() { return contacts.values(); }
 	
 	public Set<String> getContactKeys() {
 		return contacts.keySet();

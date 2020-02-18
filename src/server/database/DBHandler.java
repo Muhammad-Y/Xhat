@@ -5,43 +5,38 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.sql.*;
 import java.util.ArrayList;
-import common.ResultCode;
-import server.Group;
+
+import server.LogListener;
 import server.User;
 
 public final class DBHandler {
     private Connection conn;
-    private boolean verbose = false;
+    private LogListener logListener;
 
-    public DBHandler() {
+    public DBHandler(LogListener logListener) {
+        this.logListener = logListener;
         try {
             Class.forName("org.postgresql.Driver").getConstructor().newInstance();
         } catch (Exception e) {
-            System.out.println("database.DBHandler error: " + e.toString());
+            logListener.logError("database.DBHandler error: " + e.toString());
         }
     }
 
     public void open() {
-        if (verbose)
-            System.out.println("Opening connection...");
         try {
             conn = DriverManager.
                     getConnection("jdbc:postgresql://xhat-db.cnzyqrtrhsgw.us-east-1.rds.amazonaws.com/postgres",
                             "postgres", "cEe9hIxcFfljtgRoRfv3");
-            if (verbose)
-                System.out.println("Connection open.");
         } catch (SQLException e) {
-            System.out.println("Connection failed.");
+            logListener.logError("Connection failed.");
         }
     }
 
     public void close() {
         try {
             conn.close();
-            if (verbose)
-                System.out.println("Connection closed.");
         } catch (SQLException e) {
-            System.out.println("database.DBHandler error: " + e.toString());
+            logListener.logError("database.DBHandler error: " + e.toString());
         }
     }
 
@@ -51,9 +46,7 @@ public final class DBHandler {
         return pst.executeQuery();
     }
 
-    public int registerNewUser(User user) {
-        open();
-        try {
+    public int registerNewUser(User user) throws SQLException {
             if(!checkUsername(user.toString()).next()) {
                 PreparedStatement pst = conn.
                         prepareStatement(Statements.registerNewUser);
@@ -61,12 +54,8 @@ public final class DBHandler {
                 pst.setObject(2, user.getProtectedPassword());
                 pst.setObject(3, new java.sql.Timestamp(System.currentTimeMillis()));
                 pst.executeUpdate();
-                close();
                 return ResultCode.ok;
             }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
         return ResultCode.userNameAlreadyTaken;
     }
 
@@ -99,8 +88,6 @@ public final class DBHandler {
             while(rs.next()) {
                 pst.setObject(1, rs.getInt(1));
                 pst.setObject(2, rs.getInt(2));
-                pst.setObject(3, rs.getInt(2));
-                pst.setObject(4, rs.getInt(1));
             }
             pst.executeUpdate();
     }
@@ -221,7 +208,7 @@ public final class DBHandler {
             pst.setString(1, fromUser.toString());
             pst.setString(2, searchString + '%');
             ResultSet rs = pst.executeQuery();
-            while(rs.next()) {
+            while(rs.next() && rs.getString(1) != fromUser.toString()) {
                 results.add(rs.getString(1));
             }
             return results.toArray(new String[results.size()]);

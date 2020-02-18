@@ -73,10 +73,10 @@ public class Statements {
 
     static final String getContactRequests =
             "SELECT username FROM users JOIN contactrequests AS cr " +
-                    "ON cr.from_id = users.users_id AND cr.to_id = (?)";
+                    "ON cr.from_id = users.user_id AND cr.to_id = (?)";
 
     static final String addContactRequest =
-            "INSERT INTO contactrequests VALUES (?,?), (?,?)";
+            "INSERT INTO contactrequests VALUES (?,?)";
 
     static final String resetOnlineStatus =
             "DELETE FROM users_online";
