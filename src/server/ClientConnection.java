@@ -74,7 +74,7 @@ public class ClientConnection implements Runnable, UserListener {
                 }
             }
             if (user != null) {
-                user.setClientConnection(null);
+                //user.setClientConnection(null);
                 notifyContacts();
             }
             logListener.logInfo("Client disconnected: " + ((getUser() != null) ? getUser().getUserName() : "null"));

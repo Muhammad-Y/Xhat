@@ -218,6 +218,10 @@ public class MainController {
 		clientCommunications.leaveGroup(groupId);
 	}
 
+	public void removeContact(String username) {
+		clientCommunications.removeContact(username);
+	}
+
 	/**
 	 * Add asterisk and set bold username in contact- or group-list and move contactName to top.
 	 * @param userNameToNotify

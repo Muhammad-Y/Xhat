@@ -85,6 +85,16 @@ public class ClientCommunications implements Runnable {
 	        disconnect();
 	    }
 	}
+
+	public void removeContact(String username) {
+		try {
+			oos.writeObject("RemoveContact");
+			oos.writeObject(username);
+			oos.flush();
+		} catch (IOException e) {
+			disconnect();
+		}
+	}
 	
 	public String getUserName() {
 		return this.userName;

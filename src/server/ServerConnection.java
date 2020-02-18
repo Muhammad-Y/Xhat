@@ -1,9 +1,12 @@
 package server;
 
+import server.database.DBHandler;
+
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.sql.SQLException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -31,7 +34,7 @@ public class ServerConnection implements Runnable {
 	}
 	
 	public void shutdownServer() {
-		clientsManager.saveData();
+
 		System.exit(0);
 	}
 
@@ -47,14 +50,15 @@ public class ServerConnection implements Runnable {
 	public void run() {
 		try (ServerSocket serverSocket = new ServerSocket(listeningPort)) {
 			logListener.logInfo("Server listening on: " + InetAddress.getLocalHost().getHostAddress() + ":" + serverSocket.getLocalPort());
-//			clientsManager.loadData();
-//			clientsManager.addTestData();
+			dbh.open();
+			dbh.resetOnlineStatus();
+			dbh.close();
 			while (!Thread.interrupted()) {
 				Socket socket = serverSocket.accept();
 				//new ClientConnection(socket, clientsManager, threadPool, logListener);
 				new ClientConnectionDB(socket, clientsManager, dbh, threadPool, logListener);
 			}
-		} catch (IOException e) {
+		} catch (IOException | SQLException e) {
 			logListener.logError("Server error: " + e.getMessage());
 			e.printStackTrace();
 		}
