@@ -7,7 +7,7 @@ public class Statements {
                     "SELECT username FROM users WHERE NOT user_id IN " +
                     "(SELECT u_id FROM contacts JOIN temp " +
                     "ON temp.user_id = u_id OR temp.user_id = c_id) " +
-                    "AND username LIKE (?)";
+                    "AND username ILIKE (?)";
 
     static final String getUserOnlineStatus =
             "SELECT 1 FROM users_online WHERE username = (?)";

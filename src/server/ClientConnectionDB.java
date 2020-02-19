@@ -118,12 +118,13 @@ public class ClientConnectionDB implements Runnable, UserListener {
             String requestedUser = newContactRequest[0];
             dbh.open();
             try {
-                if (dbh.checkUsername(requestedUser).next()) {
+                if (dbh.checkUsername(requestedUser)) {
                     if (declineRequest) {
                         dbh.removeContactRequest(requestedUser, user.toString());
                     } else {
-                        if (dbh.getPendingContactRequest(user.toString(), requestedUser).next()) {
+                        if (dbh.getPendingContactRequest(user.toString(), requestedUser)) {
                             dbh.addContact(user.toString(), requestedUser);
+
                             dbh.removeContactRequest(user.toString(), requestedUser);
                             transferContactList();
                             ClientConnectionDB cc = ServerConnection.getClientThread(requestedUser);
@@ -151,17 +152,18 @@ public class ClientConnectionDB implements Runnable, UserListener {
 
     /**
      * Uppdaterar INTE kontaktlistorna i nuläget
+     *
      * @param contactObj
      */
     private void receiveRemoveContact(Object contactObj) {
         if (contactObj instanceof String) {
             dbh.open();
             try {
-                dbh.removeContact(user.toString(), (String)contactObj);
-                dbh.removeContact((String)contactObj, user.toString());
-                logListener.logInfo("receiveRemoveContact() " + user.toString() + " removed " + (String)contactObj + " from contacts");
+                dbh.removeContact(user.toString(), (String) contactObj);
+                dbh.removeContact((String) contactObj, user.toString());
+                logListener.logInfo("receiveRemoveContact() " + user.toString() + " removed " + (String) contactObj + " from contacts");
                 transferContactList();
-                ClientConnectionDB cc = ServerConnection.getClientThread((String)contactObj);
+                ClientConnectionDB cc = ServerConnection.getClientThread((String) contactObj);
                 if (cc != null) {
                     cc.transferContactList();
                 }
@@ -171,7 +173,7 @@ public class ClientConnectionDB implements Runnable, UserListener {
             dbh.close();
 
         } else {
-            logListener.logInfo("receiveRemoveContact() contact not found: " + (String)contactObj);
+            logListener.logInfo("receiveRemoveContact() contact not found: " + (String) contactObj);
         }
     }
 
@@ -306,7 +308,9 @@ public class ClientConnectionDB implements Runnable, UserListener {
         dbh.open();
         try {
             contactRequests = dbh.getContactRequestsArray(user.toString());
-        } catch (SQLException e) { e.printStackTrace(); }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
         dbh.close();
         if (contactRequests != null) {
             for (String userName : contactRequests) {
@@ -323,10 +327,16 @@ public class ClientConnectionDB implements Runnable, UserListener {
     private void transferSearchResults(Object searchObj) throws IOException {
         String searchString;
         if (searchObj instanceof String && (searchString = (String) searchObj).length() >= 2) {
-            String[] results = dbh.searchUser(searchString, user);
-            oos.writeObject("SearchResult");
-            oos.writeObject(results);
-            logListener.logInfo("searchUser() transferred search results to: " + user.toString());
+            dbh.open();
+            try {
+                String[] results = dbh.searchUser(searchString, user);
+                dbh.close();
+                oos.writeObject("SearchResult");
+                oos.writeObject(results);
+                logListener.logInfo("searchUser() transferred search results to: " + user.toString());
+            } catch (SQLException e) {
+                logListener.logError("clientConnectionDB: " + user.toString() + ": " + e);
+            }
         } else {
             logListener.logError("searchUser() Received invalid string-obj from " + user.toString());
         }
@@ -351,7 +361,9 @@ public class ClientConnectionDB implements Runnable, UserListener {
                 username = credentials[0];
                 password = credentials[1];
                 // User user = clientsManager.getUser(username);
+                dbh.open();
                 if (dbh.verifyLogin(username, password)) {
+                    dbh.close();
                     oos.writeBoolean(true);
                     oos.flush();
                     this.user = new User(username, password);
@@ -362,6 +374,7 @@ public class ClientConnectionDB implements Runnable, UserListener {
                     ServerConnection.setThreadName(user.toString(), this);
                     success = true;
                 } else {
+                    dbh.close();
                     logListener.logError("Client login failed: wrong userName or password.");
                     oos.writeBoolean(false);
                     oos.flush();
@@ -495,7 +508,9 @@ public class ClientConnectionDB implements Runnable, UserListener {
                                 try {
                                     dbh.updateOnlineStatus(user.toString());
                                     dbh.setLoginTime(user.toString());
-                                } catch (SQLException e ) { logListener.logError("LoginError " + e); }
+                                } catch (SQLException e) {
+                                    logListener.logError("LoginError " + e);
+                                }
                                 dbh.close();
                                 transferContactList();
                                 transferGroupChats();
