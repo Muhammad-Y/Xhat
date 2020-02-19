@@ -491,7 +491,12 @@ public class ClientConnectionDB implements Runnable, UserListener {
                             loggedIn = login(ois.readObject());
                             if (loggedIn) {
                                 logListener.logInfo("User logged in: " + user.toString());
-                                dbh.updateOnlineStatus(user.toString());
+                                dbh.open();
+                                try {
+                                    dbh.updateOnlineStatus(user.toString());
+                                    dbh.setLoginTime(user.toString());
+                                } catch (SQLException e ) { logListener.logError("LoginError " + e); }
+                                dbh.close();
                                 transferContactList();
                                 transferGroupChats();
                                 transferBufferedMessages();

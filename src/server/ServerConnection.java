@@ -15,7 +15,7 @@ public class ServerConnection implements Runnable {
 	private int listeningPort;
 	private ClientsManager clientsManager;
 	private static Map<String, ClientConnectionDB> clientThreads = Collections.synchronizedMap(new HashMap<>());
-	private DBHandler dbh = new DBHandler();
+	private DBHandler dbh;
 	private ThreadPool threadPool;
 	private LogListener logListener;
 
@@ -23,12 +23,14 @@ public class ServerConnection implements Runnable {
 		this.listeningPort = listeningPort;
 		this.clientsManager = clientsManager;
 		this.threadPool = threadPool;
+		this.dbh = new DBHandler();
 	}
-	
+
 	public void addListener(LogListener listener) {
 		this.logListener = listener;
+		dbh.addListener(listener);
 	}
-	
+
 	public void start() {
 		this.threadPool.execute(this);
 	}

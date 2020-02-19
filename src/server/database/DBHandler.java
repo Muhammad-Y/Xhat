@@ -13,14 +13,15 @@ public final class DBHandler {
     private Connection conn;
     private LogListener logListener;
 
-    public DBHandler(LogListener logListener) {
-        this.logListener = logListener;
+    public DBHandler() {
         try {
             Class.forName("org.postgresql.Driver").getConstructor().newInstance();
         } catch (Exception e) {
             logListener.logError("database.DBHandler error: " + e.toString());
         }
     }
+
+    public void addListener(LogListener listener) { this.logListener = listener; }
 
     public void open() {
         try {
@@ -211,6 +212,7 @@ public final class DBHandler {
             while(rs.next()) {
                 results.add(rs.getString(1));
             }
+            close();
             return results.toArray(new String[results.size()]);
         } catch(SQLException e) {
             e.printStackTrace();
@@ -218,9 +220,7 @@ public final class DBHandler {
         return null;
     }
 
-    public void updateOnlineStatus(String username) {
-        open();
-        try{
+    public void updateOnlineStatus(String username) throws SQLException {
             PreparedStatement pst = conn.
                     prepareStatement(Statements.getUserOnlineStatus);
             pst.setString(1, username);
@@ -232,14 +232,17 @@ public final class DBHandler {
             }
             pst.setString(1, username);
             pst.executeUpdate();
-        }catch (SQLException e) {
-            e.printStackTrace();
-        }
-        close();
     }
 
     public void resetOnlineStatus() throws SQLException {
         PreparedStatement pst = conn.prepareStatement(Statements.resetOnlineStatus);
+        pst.executeUpdate();
+    }
+
+    public void setLoginTime(String username) throws SQLException {
+        PreparedStatement pst = conn.prepareStatement(Statements.setLoginTime);
+        pst.setObject(1, new java.sql.Timestamp(System.currentTimeMillis()));
+        pst.setObject(2, username);
         pst.executeUpdate();
     }
 
