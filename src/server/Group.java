@@ -8,10 +8,10 @@ public class Group implements Serializable {
 	private final String groupId;
 	private LinkedList<User> members;
 	
-	public Group(String groupName, LinkedList<User> members) {
+	public Group(String groupName, LinkedList<User> members, String groupId) {
 		this.groupName = groupName;
 		this.members = members;
-		this.groupId = Integer.toString(this.hashCode());
+		this.groupId = groupId;
 	}
 	
 	public String getGroupName() {

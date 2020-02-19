@@ -5,7 +5,9 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.Random;
 
+import server.Group;
 import server.LogListener;
 import server.User;
 
@@ -192,7 +194,7 @@ public final class DBHandler {
         int i = 0;
         while(rs.next()) {
             groupsArray[i][0] = rs.getString(2);
-            groupsArray[i][1] = "" + (rs.getInt(1)); // FIXA! Tillfälligt lösning
+            groupsArray[i][1] = String.valueOf((rs.getInt(1)));
             i++;
         }
         return groupsArray;
@@ -202,16 +204,31 @@ public final class DBHandler {
         try {
             PreparedStatement pst = conn.prepareStatement(Statements.insertIntoGroups);
             pst.setString(1, groupname);
-            pst.executeQuery();
+            pst.execute();
             for(String member : members) {
                 pst = conn.prepareStatement(Statements.addGroupMember);
                 pst.setString(1, groupname);
                 pst.setString(2, member);
-                pst.executeQuery();
+                pst.execute();
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
+    }
+
+    public String getGroupID(String groupName) {
+        try {
+            PreparedStatement pst = conn.prepareStatement(Statements.getGroupID);
+            pst.setString(1, groupName);
+            ResultSet rs = pst.executeQuery();
+            String groupID = "";
+            while(rs.next())
+                groupID = rs.getString(1);
+            return groupID;
+        }catch (Exception e){
+
+        }
+        return null;
     }
 
     public String[] searchUser(String searchString, User fromUser) {

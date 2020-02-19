@@ -349,7 +349,7 @@ public class ClientCommunications implements Runnable {
 					if (obj instanceof String) {
 						request = (String) obj;
 						ClientLogger.logInfo("Received request(" + request + ")");
-						socket.setSoTimeout(500);
+					//	socket.setSoTimeout(500);
 						switch (request) {
 						case "EncryptionKey":
 							String username = (String) ois.readObject();

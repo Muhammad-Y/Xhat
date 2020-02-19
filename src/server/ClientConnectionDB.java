@@ -185,14 +185,18 @@ public class ClientConnectionDB implements Runnable, UserListener {
             String groupName = newGroup[0];
             String[] memberNames = new String[newGroup.length - 1];
             for (int i = 1; i < newGroup.length; i++) memberNames[i - 1] = newGroup[i];
-          /*  dbh.addGroup(groupName, memberNames);
-            Group group = clientsManager.newGroup(user, groupName, memberNames);
+            dbh.open();
+            dbh.addGroup(groupName, memberNames);
+            String groupID = dbh.getGroupID(groupName);
+            Group group = clientsManager.newGroup(user, groupName, memberNames, groupID);
+            dbh.close();
             String newGroupId = group.getGroupId();
+            for(User member : group.getMembers())
+                member.getClientConnection().updateGroupList(group);
             if (newGroupId != null) {
                 logListener.logInfo("newGroup() new group by " + user.getUserName() + " created: " + groupName + ", ID: " + newGroupId);
                 transferEncryptionKeyToRecipients(group);
             }
-            */
         }
         else logListener.logError("newGroup() Received invalid newGroup-obj from " + user.toString());
     }
@@ -266,7 +270,7 @@ public class ClientConnectionDB implements Runnable, UserListener {
             list.add(group.getGroupId());
             list.add(keyPair.getPrivate().getEncoded());
             ClientConnectionDB clientConnection = user.getClientConnection();
-            clientConnection.transferEncryptionKey(list, 1);
+            clientConnection.transferEncryptionKey(list, 2);
         }
     }
 
@@ -455,6 +459,11 @@ public class ClientConnectionDB implements Runnable, UserListener {
                 oos.writeObject(FileUtils.readFileToByteArray(new File("data/" + o + ".pub")));
                 logListener.logCommunication("Sent encryption key for " + o);
             }
+            if(type == 2){
+                oos.writeObject("GroupKey");
+                oos.writeObject(((ArrayList<Object>)o).get(0));
+                oos.writeObject(((ArrayList<Object>)o).get(1));
+            }
             oos.flush();
         } catch (IOException e) {
             disconnectClient();
@@ -512,7 +521,7 @@ public class ClientConnectionDB implements Runnable, UserListener {
                                 logListener.logInfo("User logged in: " + user.toString());
                                 dbh.updateOnlineStatus(user.toString());
                                 transferContactList();
-                                //transferGroupChats();
+                                transferGroupChats();
                                 transferBufferedMessages();
                                 transferContactRequests();
                                 notifyContacts();

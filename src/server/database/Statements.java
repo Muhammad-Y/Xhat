@@ -53,6 +53,9 @@ public class Statements {
     static final String insertIntoGroups =
             "INSERT INTO groups (groupname) VALUES (?)";
 
+    static final String getGroupID =
+            "Select group_id from groups where groupname = (?)";
+
     static final String addGroupMember =
             "INSERT INTO groupmembers VALUES (" +
                     "(select group_id from groups where groupname = (?)), " +
@@ -66,7 +69,7 @@ public class Statements {
             "select group_id, groupname from groups " +
                     "inner join groupmembers on groups.group_id=groupmembers.g_id " +
                     "inner join users on groupmembers.u_id=users.user_id " +
-                    "where users.username (?)";
+                    "where users.username = (?)";
 
     static final String getPendingContactRequest =
             "SELECT 1 FROM contactrequests WHERE to_id = (?) AND from_id = (?)";

@@ -29,7 +29,7 @@ public class ClientsManager {
 		}
 	}
 
-	public Group newGroup(User founder, String groupName, String[] memberNames) {
+	public Group newGroup(User founder, String groupName, String[] memberNames, String groupID) {
 		boolean success = true;
 		String groupId;
 		Group newGroup = null;
@@ -47,11 +47,9 @@ public class ClientsManager {
 			else success = false;
 		}
 		if (success) {
-			newGroup = new Group(groupName, members);
+			newGroup = new Group(groupName, members, groupID);
 			groupId = newGroup.getGroupId();
 			groups.put(groupId, newGroup);
-			for(User member : members)
-				member.addGroup(newGroup);
 		}
 		return newGroup;
 	}
