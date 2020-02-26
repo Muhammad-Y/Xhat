@@ -10,6 +10,8 @@ import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.LinkedList;
 
@@ -56,6 +58,8 @@ public class ClientConnectionDB implements Runnable, UserListener {
     public User getUser() {
         return user;
     }
+
+    public DBHandler getDBH() {return dbh;}
 
     public boolean isConnected() {
         boolean connected = false;
@@ -177,21 +181,26 @@ public class ClientConnectionDB implements Runnable, UserListener {
         }
     }
 
-    private void receiveNewGroup(Object obj) throws ClassNotFoundException, IOException {
-        String[] newGroup;
-        if (obj instanceof String[] && (newGroup = (String[]) obj).length >= 4) {
+    private void receiveNewGroup(Object obj) throws IOException, NoSuchAlgorithmException {
+        String[] newGroup = (String[]) obj;
+        if (obj instanceof String[]) {// && (newGroup = (String[]) obj).length >= 4) {
             String groupName = newGroup[0];
             String[] memberNames = new String[newGroup.length - 1];
-            for (int i = 1; i < newGroup.length; i++) {
-                memberNames[i - 1] = newGroup[i];
-            }
-            String newGroupId = clientsManager.newGroup(user, groupName, memberNames);
+            for (int i = 1; i < newGroup.length; i++) memberNames[i - 1] = newGroup[i];
+            dbh.open();
+            dbh.addGroup(groupName, memberNames);
+            String groupID = dbh.getGroupID(groupName);
+            Group group = clientsManager.newGroup(user, groupName, memberNames, groupID);
+            dbh.close();
+            String newGroupId = group.getGroupId();
+            for(User member : group.getMembers())
+                member.getClientConnection().updateGroupList(group);
             if (newGroupId != null) {
-                logListener.logInfo("newGroup() new group by " + user.toString() + " created: " + groupName + ", ID: " + newGroupId);
+                logListener.logInfo("newGroup() new group by " + user.getUserName() + " created: " + groupName + ", ID: " + newGroupId);
+                transferEncryptionKeyToRecipients(group);
             }
-        } else {
-            logListener.logError("newGroup() Received invalid newGroup-obj from " + user.toString());
         }
+        else logListener.logError("newGroup() Received invalid newGroup-obj from " + user.toString());
     }
 
     private void receiveLeaveGroup(Object groupIdObj) throws IOException {
@@ -256,6 +265,17 @@ public class ClientConnectionDB implements Runnable, UserListener {
         }
     }
 
+    private void transferEncryptionKeyToRecipients(Group group) throws IOException, NoSuchAlgorithmException {
+        KeyPair keyPair = Encryption.doGenkey(group.getGroupId());
+        for (User user : group.getMembers()) {
+            ArrayList<Object> list = new ArrayList<>();
+            list.add(group.getGroupId());
+            list.add(keyPair.getPrivate().getEncoded());
+            ClientConnectionDB clientConnection = user.getClientConnection();
+            clientConnection.transferEncryptionKey(list, 2);
+        }
+    }
+
     /**
      * Send contactList & groupChats
      *
@@ -265,13 +285,12 @@ public class ClientConnectionDB implements Runnable, UserListener {
         dbh.open();
         try {
             String[][] contacts = dbh.getContactsArray(user.toString());
+            System.out.println(Arrays.toString(contacts));
             int nbrOfContacts = contacts.length;
-            if (nbrOfContacts > 0) {
-                oos.writeObject("ContactList");
-                oos.writeObject(contacts);
-                oos.flush();
-                logListener.logInfo("Transfered " + nbrOfContacts + " contacts to: " + user.toString());
-            }
+            oos.writeObject("ContactList");
+            oos.writeObject(contacts);
+            oos.flush();
+            logListener.logInfo("Transfered " + nbrOfContacts + " contacts to: " + user.toString());
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -360,18 +379,20 @@ public class ClientConnectionDB implements Runnable, UserListener {
                 String username, password;
                 username = credentials[0];
                 password = credentials[1];
-                // User user = clientsManager.getUser(username);
                 dbh.open();
                 if (dbh.verifyLogin(username, password)) {
                     dbh.close();
                     oos.writeBoolean(true);
                     oos.flush();
-                    this.user = new User(username, password);
-                    ClientConnectionDB clientConnection = ServerConnection.getClientThread(user.toString());
-                    if (clientConnection != null) {
-                        clientConnection.disconnectClient();
+                    user = clientsManager.getUser(username);
+                    if(user == null){
+                        user = new User(username, password);
+                        clientsManager.addUser(user);
                     }
+                    ClientConnectionDB clientConnection = ServerConnection.getClientThread(user.toString());
+                    if (clientConnection != null) clientConnection.disconnectClient();
                     ServerConnection.setThreadName(user.toString(), this);
+                    user.setClientConnection(ServerConnection.getClientThread(user.toString()));
                     success = true;
                 } else {
                     dbh.close();
@@ -379,9 +400,8 @@ public class ClientConnectionDB implements Runnable, UserListener {
                     oos.writeBoolean(false);
                     oos.flush();
                 }
-            } else {
-                logListener.logError("login() Received non-string[] credentials from client.");
             }
+            else logListener.logError("login() Received non-string[] credentials from client.");
         } catch (IOException e) {
             logListener.logError("Client login timeout");
         }
@@ -395,8 +415,7 @@ public class ClientConnectionDB implements Runnable, UserListener {
                 String[] credentials = (String[]) credentialsObj;
                 String userName = credentials[0];
                 String password = credentials[1];
-                boolean userNameOk = userName.length() > 0 && userName.length() <= 10 &&
-                        !hasSpecialCharacters(userName);
+                boolean userNameOk = userName.length() > 0 && userName.length() <= 10 && !hasSpecialCharacters(userName);
                 boolean passwordOk = password.length() > 0 && password.length() <= 20;
                 if (userNameOk && passwordOk) {
                     User newUser = new User(userName, password);
@@ -408,30 +427,33 @@ public class ClientConnectionDB implements Runnable, UserListener {
                     }
                     dbh.close();
                     if (result == ResultCode.ok) {
+                        clientsManager.addUser(newUser);
                         logListener.logInfo("User registered: " + userName);
-                    } else if (result == ResultCode.userNameAlreadyTaken) {
-                        logListener.logInfo("User name already taken: " + userName);
                     }
-                } else {
+                    else if (result == ResultCode.userNameAlreadyTaken) logListener.logInfo("User name already taken: " + userName);
+                }
+                else {
                     if (!userNameOk && !passwordOk) {
                         logListener.logError("Registration failed: Username and password have wrong format.");
                         result = ResultCode.wrongCredentials;
-                    } else if (!userNameOk) {
+                    }
+                    else if (!userNameOk) {
                         logListener.logError("Registration failed: Username has wrong format.");
                         result = ResultCode.wrongUsernameFormat;
-                    } else {
+                    }
+                    else {
                         logListener.logError("Registration failed: Password has wrong format.");
                         result = ResultCode.wrongPasswordFormat;
                     }
                 }
                 oos.writeInt(result);
+                oos.flush();
                 if (result == ResultCode.ok) {
                     KeyPair keyPair = Encryption.doGenkey(userName);
                     transferEncryptionKey(keyPair.getPrivate().getEncoded(), 0);
                 }
-            } else {
-                logListener.logError("register() Received non-string[] credentials from client.");
             }
+            else logListener.logError("register() Received non-string[] credentials from client.");
         } catch (IOException | NoSuchAlgorithmException e) {
             logListener.logError("Client registration timeout");
         }
@@ -448,6 +470,11 @@ public class ClientConnectionDB implements Runnable, UserListener {
                 oos.writeObject(o);
                 oos.writeObject(FileUtils.readFileToByteArray(new File("data/" + o + ".pub")));
                 logListener.logCommunication("Sent encryption key for " + o);
+            }
+            if(type == 2){
+                oos.writeObject("GroupKey");
+                oos.writeObject(((ArrayList<Object>)o).get(0));
+                oos.writeObject(((ArrayList<Object>)o).get(1));
             }
             oos.flush();
         } catch (IOException e) {
@@ -580,7 +607,7 @@ public class ClientConnectionDB implements Runnable, UserListener {
             }
         } catch (SocketTimeoutException e) {
             threadPool.execute(this);
-        } catch (ClassNotFoundException e) {
+        } catch (ClassNotFoundException | NoSuchAlgorithmException e) {
             logListener.logError("Server: " + e.getMessage());
             e.printStackTrace();
         } catch (IOException e) {

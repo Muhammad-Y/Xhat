@@ -1,5 +1,7 @@
 package common;
 
+import sun.security.rsa.RSAPublicKeyImpl;
+
 import javax.crypto.*;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
@@ -8,7 +10,9 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.*;
 import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.RSAPrivateKeySpec;
 import java.security.spec.X509EncodedKeySpec;
+import java.util.Base64;
 
 /**
  * Contains static methods for generating RSA keypairs, encrypting and decrypting files using AES/RSA encryption.
@@ -58,6 +62,30 @@ public class Encryption{
 		return keyPair;
 	}
 
+	public static PrivateKey getPrivate(String filename) throws Exception {
+		byte[] keyBytes = Files.readAllBytes(new File(filename).toPath());
+		PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(keyBytes);
+		KeyFactory kf = KeyFactory.getInstance("RSA");
+		return kf.generatePrivate(spec);
+	}
+
+	public static PublicKey getPublic(String filename) throws Exception {
+		byte[] keyBytes = Files.readAllBytes(new File(filename).toPath());
+		X509EncodedKeySpec spec = new X509EncodedKeySpec(keyBytes);
+		KeyFactory kf = KeyFactory.getInstance("RSA");
+		return kf.generatePublic(spec);
+	}
+
+	public PrivateKey getGroupKey(String keyPath) throws Exception {
+		byte[] bytes = Files.readAllBytes(Paths.get(keyPath));
+		X509EncodedKeySpec keySpec = new X509EncodedKeySpec(bytes);
+		KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+		PublicKey pubKey = keyFactory.generatePublic(keySpec);
+		RSAPublicKeyImpl publicKey = (RSAPublicKeyImpl) pubKey;
+		PrivateKey pvt = KeyFactory.getInstance("RSA").generatePrivate(new RSAPrivateKeySpec(publicKey.getModulus(), publicKey.getPublicExponent()));
+		return pvt;
+	}
+
 	/**
 	 * Encrypts a file with an RSA key
 	 * @param inputFile The file to be encrypted
@@ -104,7 +132,7 @@ public class Encryption{
 	 * @return File The decrypted file is returned
 	 * @throws Exception
 	 */
-	public static File decryptFile(File inputFile, String keyPath, String key) throws Exception{
+	public static File decryptFile(File inputFile, String keyPath) throws Exception{
 		File decrypted = null;
 		Cipher cipherRSA = Cipher.getInstance("RSA/ECB/PKCS1Padding");
 		PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(Files.readAllBytes(Paths.get(keyPath)));
@@ -135,48 +163,27 @@ public class Encryption{
 	/**
 	 * Encrypts text with an RSA key
 	 * @param text The text to be encrypted
-	 * @param key The RSA key used to encrypt the file
+	 * @param keyPath The path to the key used to encrypt the text
 	 * @return byte[] The encrypted file is returned
 	 * @throws Exception
 	 */
-	public static byte[] encryptText(String text, String keyPath, String key) throws Exception {
-		Cipher cipherRSA = Cipher.getInstance("RSA/ECB/PKCS1Padding");
-		byte[] bytes = Files.readAllBytes(Paths.get(keyPath));
-		X509EncodedKeySpec keySpec = new X509EncodedKeySpec(bytes);
-		KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-		PublicKey pubKey = keyFactory.generatePublic(keySpec);
-		cipherRSA.init(Cipher.ENCRYPT_MODE, pubKey);
-
-		KeyGenerator keyGen = KeyGenerator.getInstance("AES");
-		keyGen.init(128);
-		SecretKey secretKey = keyGen.generateKey();
-
-		byte[] iv = new byte[128/8];
-		sRandom.nextBytes(iv);
-		IvParameterSpec ivSpec = new IvParameterSpec(iv);
-
-		byte[] fileBytes = cipherRSA.doFinal(secretKey.getEncoded());
-		Cipher cipherAES = Cipher.getInstance("AES/CBC/PKCS5Padding");
-		cipherAES.init(Cipher.ENCRYPT_MODE, secretKey, ivSpec);
-
-		return null;
+	public static String encryptText(String msg, String keyPath) throws Exception {
+		Cipher cipher = Cipher.getInstance("RSA");
+		cipher.init(Cipher.ENCRYPT_MODE, getPublic(keyPath));
+		return Base64.getEncoder().encodeToString(cipher.doFinal(msg.getBytes("UTF-8")));
 	}
 
 	/**
 	 * Decrypts a file with an RSA key
 	 * @param inputFile The file to be decrypted
-	 * @param key The RSA key used to decrypt the file
+	 * @param keyPath The path to the key used to decrypt the file
 	 * @return File The decrypted file is returned
 	 * @throws Exception
 	 */
-	public static String decryptText(String text, String keyPath, String key) throws Exception {
-		Cipher cipherRSA = Cipher.getInstance("RSA/ECB/PKCS1Padding");
-		PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(Files.readAllBytes(Paths.get(keyPath)));
-		KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-		PrivateKey privateKey = keyFactory.generatePrivate(keySpec);
-		cipherRSA.init(Cipher.DECRYPT_MODE, privateKey);
-
-		return "";
+	public static String decryptText(String msg, String keyPath) throws Exception {
+		Cipher cipher = Cipher.getInstance("RSA");
+		cipher.init(Cipher.DECRYPT_MODE, getPrivate(keyPath));
+		return new String(cipher.doFinal(Base64.getDecoder().decode(msg)), "UTF-8");
 	}
 
 
@@ -211,3 +218,5 @@ public class Encryption{
 	 */
 	private static String getExtension(String name) {return name.substring(name.lastIndexOf(".")); }
 }
+
+

@@ -98,8 +98,7 @@ public class MainPanel extends JPanel {
 		
 		//Gör att JList visar JLabels som text/bild
 		jlistConversation.setCellRenderer(new JListConversationRenderer());
-		jlistConversation.addMouseListener(new ConversationML());
-		JListContactsRenderer listRenderer = new JListContactsRenderer(); 
+		JListContactsRenderer listRenderer = new JListContactsRenderer();
 		jlistContactList.setCellRenderer(listRenderer);
 		jlistGroupChats.setCellRenderer(listRenderer);
 		jlistConversation.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
@@ -206,12 +205,8 @@ public class MainPanel extends JPanel {
 		setSystemLookAndFeel();
 		File file = null; //Objekttyp ska ändras efter krav, t.ex. pdf osv. även koden nedan
 		JFileChooser chooser = new JFileChooser();
- 	    
  	    int returnChoice = chooser.showOpenDialog(null);
-		if (returnChoice == JFileChooser.APPROVE_OPTION) {
-			file = chooser.getSelectedFile();
-			
-		}
+		if (returnChoice == JFileChooser.APPROVE_OPTION) file = chooser.getSelectedFile();
 		setMetalLookAndFeel();
 		return file;
 	}
@@ -248,11 +243,10 @@ public class MainPanel extends JPanel {
 	}
 	
 	public void setOtherUserStatus(boolean isOnline) {
-		if(isOnline) {
+		if(isOnline)
 			this.lblOtherUserStatus.setText("<html>User status: <font color='green'>Online</font></html>");
-		} else {
+		else
 			this.lblOtherUserStatus.setText("<html>User status: <font color='red'>Offline</font></html>");
-		}
 	}
 	
 	/**
@@ -294,10 +288,6 @@ public class MainPanel extends JPanel {
 			jlistContactList.ensureIndexIsVisible(contactIndex);
 		}
 	}
-	
-	public boolean isGroupInFocus() {
-		return isGroupInFocus;
-	}
 
 	/**
 	 * Converts a File-object to a byte array
@@ -338,6 +328,15 @@ public class MainPanel extends JPanel {
 			}
 		}
 	}
+
+	public String getEncryptionKey(String username){
+		mainController.getUserKey(username);
+		return "key/"+username+".pub";
+	}
+
+	private void removeEncryptionKey(String username){
+		new File("key/"+username+".pub").delete();
+	}
 	
 	/**
 	 * inre klass som hanterar händelser för
@@ -372,21 +371,11 @@ public class MainPanel extends JPanel {
 			} catch (UnsupportedEncodingException e) {
 				e.printStackTrace();
 			}
-			if (bytesOfMessage.length > 3 * Math.pow(10, 6))
-				JOptionPane.showMessageDialog(null, "Please write a message consisting of less than 3 MB");
+			if (bytesOfMessage.length > 3 * Math.pow(10, 6))  JOptionPane.showMessageDialog(null, "Please write a message consisting of less than 3 MB");
 			else if (selectedContact != null) {
-				File file = new File("temp/file.txt");
-				try {
-					FileUtils.writeByteArrayToFile(file, getMessageTxt().getBytes());
-					File encryptedFile = Encryption.encryptFile(file, getEncryptionKey(selectedContact.getName()), "pub");
-					byte[] data = readFileToByteArray(encryptedFile);
-					mainController.sendMessage(selectedContact.getName(), data, "", isGroupInFocus, Message.TYPE_TEXT);
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
+				mainController.sendMessage(selectedContact.getName(), bytesOfMessage, "", isGroupInFocus, Message.TYPE_TEXT);
 			}
-			else
-				JOptionPane.showMessageDialog(null, "Please select a contact or a group.", "Info", JOptionPane.INFORMATION_MESSAGE);
+			else JOptionPane.showMessageDialog(null, "Please select a contact or a group.", "Info", JOptionPane.INFORMATION_MESSAGE);
 		}
 
 		private void sendFileMessage() {
@@ -396,8 +385,7 @@ public class MainPanel extends JPanel {
 				File file = generateSelectFile();
 				if (file != null) {
 					try {
-						File encryptedFile = Encryption.encryptFile(file, getEncryptionKey(selectedContact.getName()), "pub");
-						byte[] fileData = readFileToByteArray(encryptedFile);
+						byte[] fileData = FileUtils.readFileToByteArray(Encryption.encryptFile(file, getEncryptionKey(selectedContact.getName()), "pub"));
 						String filename = file.getName();
 						mainController.sendMessage(selectedContact.getName(), fileData, filename, isGroupInFocus, Message.TYPE_FILE);
 						new File(file.getPath()+".enc").delete();
@@ -411,16 +399,6 @@ public class MainPanel extends JPanel {
 			}
 		}
 
-		private String getEncryptionKey(String username){
-			String filename = "key/"+username+".pub";
-			mainController.getUserKey(username);
-			return filename;
-		}
-
-		private void removeEncryptionKey(String username){
-			new File("key/"+username+".pub").delete();
-		}
-
 		private void removeContact() {
 			JLabel selectedContact = jlistContactList.getSelectedValue();
 			if (selectedContact != null) {
@@ -431,9 +409,8 @@ public class MainPanel extends JPanel {
 				if (choice == 0) {
 					mainController.removeContact(selectedContact.getName());
 				}
-			} else {
-				JOptionPane.showMessageDialog(null, "Please select a contact.", "Info", JOptionPane.INFORMATION_MESSAGE);
 			}
+			else JOptionPane.showMessageDialog(null, "Please select a contact.", "Info", JOptionPane.INFORMATION_MESSAGE);
 		}
 
 		private void leaveGroupChat() {
@@ -443,11 +420,9 @@ public class MainPanel extends JPanel {
 				int choice = JOptionPane.showOptionDialog(null,
 						"Do you want to leave " + selectedGroup.getText() + "?", "Leave Group",
 						JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[1]);
-				if (choice == 0)
-					mainController.leaveGroupChat(selectedGroup.getName());
-			} else {
-				JOptionPane.showMessageDialog(null, "Please select a group.", "Info", JOptionPane.INFORMATION_MESSAGE);
+				if (choice == 0) mainController.leaveGroupChat(selectedGroup.getName());
 			}
+			else JOptionPane.showMessageDialog(null, "Please select a group.", "Info", JOptionPane.INFORMATION_MESSAGE);
 		}
 	}
 
@@ -536,41 +511,5 @@ public class MainPanel extends JPanel {
 	            return noFocusBorder;
 	        }
 	    }
-	}
-	
-	private class ConversationML implements MouseListener {
-		@Override
-		public void mouseClicked(MouseEvent mouseEvent) {}
-
-		@Override
-		public void mousePressed(MouseEvent e) {}
-
-		@Override
-		public void mouseReleased(MouseEvent mouseEvent) {
-			int selectedIndex = jlistConversation.getSelectedIndex();
-			if(selectedIndex != -1) {
-				mainController.decodeAndReplaceMessageInConversation(selectedIndex, isGroupInFocus);
-			}
-		}
-
-		@Override
-		public void mouseEntered(MouseEvent e) {}
-
-		@Override
-		public void mouseExited(MouseEvent e) {}
-		
-	}
-
-	// test --> kontrollera utseende för GUI
-	public static void main(String[] args) {
-		client.Data data = new client.Data();
-		MainPanel panel = new MainPanel(new MainController(new client.ClientCommunications("127.0.0.1", 5555, data), data), new DefaultListModel<>(), new DefaultListModel<>());
-//		JFrame frameMainPanel = new JFrame("Xhat: " + "dummy");
-//		frameMainPanel.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-//		frameMainPanel.setResizable(false);
-//		frameMainPanel.add(panel);
-//		frameMainPanel.pack();
-//		frameMainPanel.setLocationRelativeTo(null);
-//		frameMainPanel.setVisible(true);
 	}
 }

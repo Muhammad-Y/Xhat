@@ -1,7 +1,6 @@
 package client;
 
 import client.gui.MainController;
-import common.Encryption;
 import common.Message;
 import common.ResultCode;
 import org.apache.commons.io.FileUtils;
@@ -71,7 +70,9 @@ public class ClientCommunications implements Runnable {
 			oos.writeObject("NewGroup");
 			oos.writeObject(newGroup);
 			oos.flush();
-		} catch (IOException e) {
+			byte[] key = (byte[]) ois.readObject();
+			receiveEncryptionKey(key, newGroup[0], true);
+		} catch (IOException | ClassNotFoundException e) {
 			disconnect();
 		}
 	}
@@ -150,7 +151,8 @@ public class ClientCommunications implements Runnable {
 				oos.writeObject(new String[] { userName, password });
 				oos.flush();
 				result = ois.readInt();
-				key = (byte[]) ois.readObject();
+				if(result == ResultCode.ok)
+					key = (byte[]) ois.readObject();
 			} catch (IOException | ClassNotFoundException e) {
 				e.printStackTrace();
 				ClientLogger.logError("Registration failed(IOException): " + e.getMessage());
@@ -196,6 +198,7 @@ public class ClientCommunications implements Runnable {
 	private void receiveContactList(Object contactsObj) throws ClassNotFoundException, IOException {
 		if (contactsObj instanceof String[][]) {
 			String[][] contacts = (String[][])contactsObj;
+			data.removeContacts(contacts);
 			for (int i = 0; i < contacts.length; i++) {
 				String contactName = contacts[i][0];
 				boolean isOnline = Boolean.parseBoolean(contacts[i][1]);
@@ -250,7 +253,7 @@ public class ClientCommunications implements Runnable {
 			senderContact = isGroupMsg ? data.getGroup(message.getRecipient()) : data.getContact(message.getSender());
 
 			if(senderContact != null) {
-				String senderName = (isGroupMsg == true) ? ((GroupChat)senderContact).getGroupId() : senderContact.getName();
+				String senderName = (isGroupMsg) ? ((GroupChat)senderContact).getGroupId() : senderContact.getName();
 				ClientLogger.logInfo("Received message from: " + senderName);
 				if(mainController.isContactSelected(senderName)) {
 					System.out.println(message.getFileName()+"\n"+message.getType());
@@ -291,14 +294,14 @@ public class ClientCommunications implements Runnable {
 		}
 	}
 
-	private void receiveEncryptionKey(byte[] requestObj, String userName, boolean privateKey){
+	private void receiveEncryptionKey(byte[] requestObj, String name, boolean privateKey){
 		if (requestObj != null) {
 			ClientLogger.logInfo("Received encryption key");
 			try {
 				if(privateKey)
-					FileUtils.writeByteArrayToFile(new File("key/"+ userName+".pvt"), (byte[])requestObj);
+					FileUtils.writeByteArrayToFile(new File("key/"+ name+".pvt"), requestObj);
 				else
-					FileUtils.writeByteArrayToFile(new File("key/"+ userName+".pub"), (byte[])requestObj);
+					FileUtils.writeByteArrayToFile(new File("key/"+ name+".pub"), requestObj);
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
@@ -338,6 +341,7 @@ public class ClientCommunications implements Runnable {
 			ClientLogger.logInfo("Listener started...");
 			String request = "";
 			Object obj;
+			byte[] file;
 			try {
 				while (!Thread.interrupted()) {
 					socket.setSoTimeout(0);
@@ -345,12 +349,17 @@ public class ClientCommunications implements Runnable {
 					if (obj instanceof String) {
 						request = (String) obj;
 						ClientLogger.logInfo("Received request(" + request + ")");
-						socket.setSoTimeout(500);
+					//	socket.setSoTimeout(500);
 						switch (request) {
 						case "EncryptionKey":
 							String username = (String) ois.readObject();
-							byte[] file = (byte[]) ois.readObject();
+							file = (byte[]) ois.readObject();
 							receiveEncryptionKey(file, username, false);
+							break;
+						case "GroupKey":
+							String groupID = (String) ois.readObject();
+							file = (byte[]) ois.readObject();
+							receiveEncryptionKey(file, groupID, true);
 							break;
 						case "NewMessage":
 							receiveMessage(ois.readObject());

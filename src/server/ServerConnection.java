@@ -36,7 +36,6 @@ public class ServerConnection implements Runnable {
 	}
 	
 	public void shutdownServer() {
-
 		System.exit(0);
 	}
 
@@ -52,6 +51,7 @@ public class ServerConnection implements Runnable {
 	public void run() {
 		try (ServerSocket serverSocket = new ServerSocket(listeningPort)) {
 			logListener.logInfo("Server listening on: " + InetAddress.getLocalHost().getHostAddress() + ":" + serverSocket.getLocalPort());
+			dbh  = new DBHandler(logListener);
 			dbh.open();
 			dbh.resetOnlineStatus();
 			dbh.close();
