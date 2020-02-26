@@ -51,7 +51,7 @@ public class ServerConnection implements Runnable {
 	public void run() {
 		try (ServerSocket serverSocket = new ServerSocket(listeningPort)) {
 			logListener.logInfo("Server listening on: " + InetAddress.getLocalHost().getHostAddress() + ":" + serverSocket.getLocalPort());
-			dbh  = new DBHandler(logListener);
+			dbh  = new DBHandler();
 			dbh.open();
 			dbh.resetOnlineStatus();
 			dbh.close();
