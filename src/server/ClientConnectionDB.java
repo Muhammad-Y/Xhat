@@ -59,8 +59,6 @@ public class ClientConnectionDB implements Runnable, UserListener {
         return user;
     }
 
-    public DBHandler getDBH() {return dbh;}
-
     public boolean isConnected() {
         boolean connected = false;
         if (socket != null) {
@@ -73,10 +71,13 @@ public class ClientConnectionDB implements Runnable, UserListener {
         if (isConnected()) {
             this.loggedIn = false;
             try {
-                dbh.updateOnlineStatus(user.toString());
+                dbh.open();
+                dbh.setToOffline(user.toString());
+                dbh.close();
                 user.setClientConnection(null);
                 notifyContacts();
                 oos.writeObject("Disconnect");
+                ServerConnection.deleteClientThread(user.toString());
             } catch (Exception e1) {
             }
             if (socket != null) {
@@ -115,6 +116,7 @@ public class ClientConnectionDB implements Runnable, UserListener {
     }
 
     private void receiveContactRequest(Object requestObj) {
+        System.out.println("HAJ");
         String[] newContactRequest;
         if (requestObj instanceof String[]) {
             newContactRequest = (String[]) requestObj;
@@ -285,7 +287,6 @@ public class ClientConnectionDB implements Runnable, UserListener {
         dbh.open();
         try {
             String[][] contacts = dbh.getContactsArray(user.toString());
-            System.out.println(Arrays.toString(contacts));
             int nbrOfContacts = contacts.length;
             oos.writeObject("ContactList");
             oos.writeObject(contacts);
@@ -533,7 +534,7 @@ public class ClientConnectionDB implements Runnable, UserListener {
                                 logListener.logInfo("User logged in: " + user.toString());
                                 dbh.open();
                                 try {
-                                    dbh.updateOnlineStatus(user.toString());
+                                    dbh.setToOnline(user.toString());
                                     dbh.setLoginTime(user.toString());
                                 } catch (SQLException e) {
                                     logListener.logError("LoginError " + e);

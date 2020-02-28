@@ -47,6 +47,10 @@ public class ServerConnection implements Runnable {
 		return clientThreads.get(username);
 	}
 
+	public static void deleteClientThread(String username) {
+		clientThreads.remove(username);
+	}
+
 	@Override
 	public void run() {
 		try (ServerSocket serverSocket = new ServerSocket(listeningPort)) {

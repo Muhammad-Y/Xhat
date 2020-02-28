@@ -106,7 +106,7 @@ public final class DBHandler {
             pst.setObject(4, rs.getInt(1));
         }
         pst.executeUpdate();
-        removeContactRequest(user, contact);
+        removeContactRequest(contact, user);
     }
 
     /**
@@ -155,8 +155,8 @@ public final class DBHandler {
         ResultSet rs = getUserIdPair(user, contact);
         PreparedStatement pst = conn.prepareStatement(Statements.deleteContactRequest);
         while (rs.next()) {
-            pst.setObject(1, rs.getInt(1));
-            pst.setObject(2, rs.getInt(2));
+            pst.setObject(1, rs.getInt(2));
+            pst.setObject(2, rs.getInt(1));
 
         }
         pst.executeUpdate();
@@ -365,16 +365,14 @@ public final class DBHandler {
      * @param username användarnamnet som ska kontrolleras
      * @throws SQLException
      */
-    public void updateOnlineStatus(String username) throws SQLException {
-        PreparedStatement pst = conn.
-                prepareStatement(Statements.getUserOnlineStatus);
+    public void setToOffline(String username) throws SQLException {
+        PreparedStatement pst = conn.prepareStatement(Statements.setToOffline);
         pst.setString(1, username);
-        ResultSet rs = pst.executeQuery();
-        if (rs.next()) {
-            pst = conn.prepareStatement(Statements.setToOffline);
-        } else {
-            pst = conn.prepareStatement(Statements.setToOnline);
-        }
+        pst.executeUpdate();
+    }
+
+    public void setToOnline(String username) throws SQLException {
+        PreparedStatement pst = conn.prepareStatement(Statements.setToOnline);
         pst.setString(1, username);
         pst.executeUpdate();
     }

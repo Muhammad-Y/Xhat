@@ -23,7 +23,9 @@ public class ClientCommunications implements Runnable {
 	private ObjectOutputStream oos;
 	private boolean loggedIn;
 	private MainController mainController;
-	private Data data;
+	// TODO remove after testing
+	/*private*/ Data data;
+	String[] results;
 
 	public ClientCommunications(String ip, int port, Data data) {
 		this.ip = ip;
@@ -112,15 +114,15 @@ public class ClientCommunications implements Runnable {
 	public boolean login(String userName, String password) {
 		//TODO: Dont let UI-thread from LoginController execute this code
 		try {
-			if (!this.loggedIn) {
+			if (!loggedIn) {
 				if(!isConnected()) {
 					establishConnection();
 				}
 				oos.writeObject("Login");
 				oos.writeObject(new String[] { userName, password });
 				oos.flush();
-				this.loggedIn = ois.readBoolean();
-				if (this.loggedIn == true) {
+				loggedIn = ois.readBoolean();
+				if (loggedIn) {
 					this.userName = userName;
 					this.mainController = new MainController(this, data);
 					ClientLogger.logInfo("login() Succesfully logged in as: " + userName);
@@ -198,7 +200,7 @@ public class ClientCommunications implements Runnable {
 	private void receiveContactList(Object contactsObj) throws ClassNotFoundException, IOException {
 		if (contactsObj instanceof String[][]) {
 			String[][] contacts = (String[][])contactsObj;
-			data.removeContacts(contacts);
+			// data.removeContacts(contacts);
 			for (int i = 0; i < contacts.length; i++) {
 				String contactName = contacts[i][0];
 				boolean isOnline = Boolean.parseBoolean(contacts[i][1]);
@@ -245,7 +247,7 @@ public class ClientCommunications implements Runnable {
 		}
 	}
 
-	private void receiveMessage(Object obj) {
+	/*private*/ void receiveMessage(Object obj) {
 		if(obj instanceof Message) {
 			Message message = (Message)obj;
 			Contact senderContact = null;
@@ -276,7 +278,7 @@ public class ClientCommunications implements Runnable {
 	
 	private void receiveSearchResults(Object resultsObj) {
 		if (resultsObj instanceof String[]) {
-			String[] results = (String[])resultsObj;
+			results = (String[])resultsObj;
 			mainController.updateSearchResults(results);
 			ClientLogger.logInfo("Received searchResults.");
 		} else {
@@ -344,7 +346,7 @@ public class ClientCommunications implements Runnable {
 			byte[] file;
 			try {
 				while (!Thread.interrupted()) {
-					socket.setSoTimeout(0);
+					// socket.setSoTimeout(0);
 					obj = ois.readObject();
 					if (obj instanceof String) {
 						request = (String) obj;
