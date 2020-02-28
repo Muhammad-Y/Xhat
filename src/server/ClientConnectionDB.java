@@ -77,6 +77,7 @@ public class ClientConnectionDB implements Runnable, UserListener {
                 user.setClientConnection(null);
                 notifyContacts();
                 oos.writeObject("Disconnect");
+                ServerConnection.closeClientThread(user.toString());
             } catch (Exception e1) {
             }
             if (socket != null) {
@@ -473,7 +474,7 @@ public class ClientConnectionDB implements Runnable, UserListener {
 
     @Override
     public void updateContactList(User contact) {
-        if (isConnected()) {
+        if (ServerConnection.getClientThread(contact.toString()) != null) {
             try {
                 transferContactList();
             } catch (IOException e) {
