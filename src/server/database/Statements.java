@@ -50,6 +50,9 @@ public class Statements {
     static final String checkIfUserExists =
             "SELECT 1 FROM users WHERE username = (?)";
 
+    static final String getUserName =
+            "SELECT username FROM users WHERE username = (?)";
+
     static final String insertIntoGroups =
             "INSERT INTO groups (groupname) VALUES (?)";
 

@@ -15,17 +15,17 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 public class MainController {
-	private DefaultListModel<JLabel> groupsModel = new DefaultListModel<>(); //Måste synkroniseras
-	private DefaultListModel<JLabel> contactsModel = new DefaultListModel<>();//Måste synkroniseras
+	/*private*/ DefaultListModel<JLabel> groupsModel = new DefaultListModel<>(); //Måste synkroniseras
+	/*private*/ DefaultListModel<JLabel> contactsModel = new DefaultListModel<>();//Måste synkroniseras
 	private DefaultListModel<String> resultsModel = new DefaultListModel<>();
 	private String[] searchResults;
-	private String lastSearchString, downloadPath;
+	/*private*/ String lastSearchString, downloadPath;
 	private JFrame frameMain, frameAddGroup, frameAddContact;
 	private MainPanel mainPanel;
 	private AddGroupChatPanel addGroupChatPanel;
 	private AddContactPanel addContactPanel;
 	private ClientCommunications clientCommunications;
-	private Data data;
+	/*private*/ Data data;
 	private Font plainContactFont = new Font("PlainFont12", Font.PLAIN, 12);
 	private Font boldContactFont = new Font("BoldFont12", Font.BOLD, 12);
 	private Font plainMessageFont = new Font("PlainFont13", Font.PLAIN, 13);
@@ -293,9 +293,10 @@ public class MainController {
 			try {
 				String text = "";
 				if(message.getSender() != "You")
-					if(!message.isGroupMessage()) text = Encryption.decryptText(new String(message.getFileData()), ENCRYPTION_KEY);
-					else text = Encryption.decryptText(new String(message.getFileData()), "key/"+message.getRecipient()+".pvt");
-				else text = new String(message.getFileData());
+					if(!message.isGroupMessage())
+						text = message.getSender() +" - "+ Encryption.decryptText(new String(message.getFileData()), ENCRYPTION_KEY);
+					else text = message.getSender() +" - "+ Encryption.decryptText(new String(message.getFileData()), "key/"+message.getRecipient()+".pvt");
+				else text = "You - " + new String(message.getFileData());
 				jLabelMessage = new JLabel(text);
 			} catch (Exception e) {
 				e.printStackTrace();

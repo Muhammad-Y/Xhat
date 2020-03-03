@@ -1,5 +1,6 @@
 package server.database;
 
+import common.Message;
 import common.ResultCode;
 
 import java.nio.charset.StandardCharsets;
@@ -11,6 +12,8 @@ import java.util.Random;
 import server.Group;
 import server.LogListener;
 import server.User;
+
+import javax.swing.plaf.nimbus.State;
 
 /**
  * Klass som hanterar kommunikationen med databasen
@@ -32,27 +35,15 @@ public final class DBHandler {
      *
      * @param listener Loglistener för servern
      */
-    public void addListener(LogListener listener) {
-        this.logListener = listener;
-    }
+    public void addListener(LogListener listener) { this.logListener = listener; }
 
-    public void open() {
-        try {
+    public void open() throws SQLException {
             conn = DriverManager.
                     getConnection("jdbc:postgresql://xhat-db.cnzyqrtrhsgw.us-east-1.rds.amazonaws.com/postgres",
                             "postgres", "cEe9hIxcFfljtgRoRfv3");
-        } catch (SQLException e) {
-            logListener.logError("Connection failed.");
-        }
     }
 
-    public void close() {
-        try {
-            conn.close();
-        } catch (SQLException e) {
-            logListener.logError("database.DBHandler error: " + e.toString());
-        }
-    }
+    public void close() throws SQLException { conn.close(); }
 
     /**
      * Kollar om ett givet användarnamn förekommer i users-tabellen i databasen
@@ -66,6 +57,14 @@ public final class DBHandler {
         pst.setObject(1, username);
         ResultSet rs = pst.executeQuery();
         return rs.next();
+    }
+
+    public String getUserName(String username) throws SQLException {
+        PreparedStatement pst = conn.prepareStatement(Statements.getUserName);
+        pst.setObject(1, username);
+        ResultSet rs = pst.executeQuery();
+        while(rs.next()) { return rs.getString(1); }
+        return null;
     }
 
     /**
@@ -304,8 +303,7 @@ public final class DBHandler {
         return groupsArray;
     }
 
-    public void addGroup(String groupname, String[] members){
-        try {
+    public void addGroup(String groupname, String[] members) throws SQLException {
             PreparedStatement pst = conn.prepareStatement(Statements.insertIntoGroups);
             pst.setString(1, groupname);
             pst.execute();
@@ -315,13 +313,9 @@ public final class DBHandler {
                 pst.setString(2, member);
                 pst.execute();
             }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
     }
 
-    public String getGroupID(String groupName) {
-        try {
+    public String getGroupID(String groupName) throws SQLException {
             PreparedStatement pst = conn.prepareStatement(Statements.getGroupID);
             pst.setString(1, groupName);
             ResultSet rs = pst.executeQuery();
@@ -329,10 +323,6 @@ public final class DBHandler {
             while(rs.next())
                 groupID = rs.getString(1);
             return groupID;
-        }catch (Exception e){
-
-        }
-        return null;
     }
 
     /**
@@ -412,18 +402,29 @@ public final class DBHandler {
      * @param password klientens (okrypterade) lösenord
      * @return true om queryt Statements.validateLogin returnerar träff
      */
-    public boolean verifyLogin(String username, String password) {
-        try {
+    public boolean verifyLogin(String username, String password) throws SQLException {
             PreparedStatement pst = conn.
                     prepareStatement(Statements.validateLogin);
             pst.setString(1, username);
             pst.setString(2, sha256(password));
             return pst.executeQuery().next();
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return false;
-        }
     }
+
+   /* public void addMessageToBuffer(Message message) throws SQLException {
+        PreparedStatement pst = conn.
+                prepareStatement(Statements.insertNewMessage);
+        pst.setString(1, message.getSender());
+        pst.setInt(2, message.getType());
+        pst.setBoolean(3, message.isGroupMessage());
+        pst.setString(4, message.getFileName());
+        pst.setTimestamp(5, Timestamp.from(message.getServerReceivedTime()));
+        pst.setTimestamp(6, Timestamp.from(message.getClientReceivedTime()));
+        pst.setBytes(7, message.getFileData());
+        int id = pst.executeUpdate();
+        pst = conn.prepareStatement(Statements.insertIntoRecipients);
+        pst.setInt(1, id);
+        pst.set
+    }*/
 
     /**
      * krypteringsalgoritmen för användarlösenord (som de sparas i databasen)

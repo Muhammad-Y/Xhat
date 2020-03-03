@@ -2,7 +2,7 @@ package client;
 
 import common.Message;
 import java.sql.*;
-
+import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 class ClientCommunicationsTest {
@@ -12,7 +12,7 @@ class ClientCommunicationsTest {
      */
     // VALID INPUT:
 
-    @org.junit.jupiter.api.Test
+    @Test
     void login() {
         // Arrange
         ClientCommunications cc = new ClientCommunications("127.0.0.1", 5555, new Data());
@@ -20,28 +20,27 @@ class ClientCommunicationsTest {
         boolean loggedIn = cc.login("Test1", "password");
         // Assert
         assertTrue(loggedIn);
-        // tear down
+        // Tear down
         cc.disconnect();
     }
 
-    @org.junit.jupiter.api.Test
+    @Test
     void sendNewContactRequest() throws Exception {
         // Arrange
         ClientCommunications cc = new ClientCommunications("127.0.0.1", 5555, new Data());
         cc.login("Test1", "password");
-        Thread.sleep(5000);
         String[] request = {"Test2", "false"};
+        Thread.sleep(5000);
         // Act
         cc.sendNewContactRequest(request);
         Thread.sleep(5000);
+        // Assert
         DBH.open();
         Statement query = DBH.con.createStatement();
         ResultSet rs = query.executeQuery("SELECT 1 FROM contactrequests WHERE to_id = 10 AND from_id = 66");
         DBH.close();
-        // Assert
         assertTrue(rs.next());
-
-        // tear down
+        // Tear down
         DBH.open();
         Statement update = DBH.con.createStatement();
         update.executeUpdate("DELETE FROM contactrequests WHERE to_id = 10 AND from_id = 66");
@@ -49,61 +48,56 @@ class ClientCommunicationsTest {
         cc.disconnect();
     }
 
-    @org.junit.jupiter.api.Test
+    @Test
     void sendTextMessageToOnlineUser() throws Exception {
         // Arrange
-        // Run InitServer.main()
         ClientCommunications cc1 = new ClientCommunications("127.0.0.1", 5555, new Data());
         cc1.login("Test1", "password");
         ClientCommunications cc2 = new ClientCommunications("127.0.0.1", 5555, new Data());
         cc2.login("Test6", "password");
-        Thread.sleep(5000);
         byte[] payload = "sending testmess".getBytes();
+        Thread.sleep(5000);
         // Act
         boolean success = cc1.sendMessage(new Message("Test6", false, null, Message.TYPE_TEXT, payload));
         Thread.sleep(5000);
         // Assert
         assertTrue(success);
-        // tear down
+        // Tear down
         cc1.disconnect();
         cc2.disconnect();
     }
 
-    @org.junit.jupiter.api.Test
+    @Test
     void sendTextMessageToOfflineUser() throws Exception {
         // Arrange
         ClientCommunications cc1 = new ClientCommunications("127.0.0.1", 5555, new Data());
         ClientCommunications cc2 = new ClientCommunications("127.0.0.1", 5555, new Data());
         cc1.login("Test1", "password");
-        Thread.sleep(5000);
         byte[] payload = "sending testmess".getBytes();
+        Thread.sleep(5000);
         // Act
         boolean success = cc1.sendMessage(new Message("Test6", false, null, Message.TYPE_TEXT, payload));
         Thread.sleep(10000);
         cc1.disconnect();
         Thread.sleep(5000);
-
+        // Assert
         if(success) {
             cc2.login("Test6", "password");
-            Thread.sleep(20000);
+            Thread.sleep(5000);
         }
-        // Assert
         assertTrue(success);
-
         // Tear down
         cc2.disconnect();
     }
 
-
-
-    @org.junit.jupiter.api.Test
+    @Test
     void searchUser() throws Exception {
         // Arrange
         ClientCommunications cc = new ClientCommunications("127.0.0.1", 5555, new Data());
         cc.login("Test1", "password");
         Thread.sleep(5000);
-        String request = "test1";
-        String[] result = {"Test10", "Test11", "Test12", "Test13"};
+        String request = "unit";
+        String[] result = {"unitTest1", "unitTest2", "unitTest3", "unitTest4"};
         // Act
         cc.searchUser(request);
         Thread.sleep(5000);
@@ -117,7 +111,70 @@ class ClientCommunicationsTest {
         assertTrue(equals);
     }
 
-    @org.junit.jupiter.api.Test
+
+
+    @Test
+    void removeContact() throws Exception {
+        // Arrange
+        ClientCommunications cc = new ClientCommunications("127.0.0.1", 5555, new Data());
+        cc.login("Test1", "password");
+        Thread.sleep(5000);
+        String request = "Test6";
+        // Act
+        cc.removeContact(request);
+        Thread.sleep(5000);
+        // Assert
+        DBH.open();
+        Statement query = DBH.con.createStatement();
+        ResultSet rs = query.executeQuery("SELECT * FROM contacts " +
+                "WHERE u_id = 66 AND c_id = 27" +
+                "OR u_id = 27 AND c_id = 66");
+        DBH.close();
+        assertTrue(!rs.next());
+        // Tear down
+        DBH.open();
+        Statement update = DBH.con.createStatement();
+        update.executeUpdate("INSERT INTO contacts VALUES (66, 27), (27, 66)");
+        DBH.close();
+    }
+
+    @Test
+    void register() throws Exception {
+        // Arrange
+        String name = "unitTest5", password = "word";
+        ClientCommunications cc = new ClientCommunications("127.0.0.1", 5555, new Data());
+        // Act
+        cc.register(name, password);
+        Thread.sleep(5000);
+        // Assert
+        DBH.open();
+        PreparedStatement pst = DBH.con.prepareStatement("SELECT 1 FROM users WHERE username = (?)");
+        pst.setObject(1, name);
+        ResultSet rs = pst.executeQuery();
+        DBH.close();
+        assertTrue(rs.next());
+        // Tear down
+        DBH.open();
+        pst = DBH.con.prepareStatement("DELETE FROM users WHERE username = (?)");
+        pst.setObject(1, name);
+        pst.executeUpdate();
+        DBH.close();
+        cc.disconnect();
+    }
+
+    @Test
+    void isConnected() {
+    }
+
+    @Test
+    void disconnect() {
+    }
+
+    @Test
+    void getUserKey() {
+    }
+
+    /*@org.junit.jupiter.api.Test
     void createNewGroup() throws Exception {
         // Arrange
         ClientCommunications cc = new ClientCommunications("127.0.0.1", 5555, new Data());
@@ -149,60 +206,15 @@ class ClientCommunicationsTest {
         // select group_id from groups where groupname = 'unitTestGroup'
         // delete from groupmembers where g_id = ?
         // delete from groups where groupname = 'unitTestGroup'
-    }
+    }*/
 
-    @org.junit.jupiter.api.Test
+    @Test
     void leaveGroup() {
     }
 
-    @org.junit.jupiter.api.Test
-    void removeContact() throws Exception {
-        // Arrange
-        ClientCommunications cc = new ClientCommunications("127.0.0.1", 5555, new Data());
-        cc.login("Test1", "password");
-        Thread.sleep(5000);
-        String request = "Test6";
-        // Act
-        cc.removeContact(request);
-        Thread.sleep(5000);
-        DBH.open();
-        Statement query = DBH.con.createStatement();
-        ResultSet rs = query.executeQuery("SELECT * FROM contacts " +
-                "WHERE u_id = 66 AND c_id = 27" +
-                "OR u_id = 27 AND c_id = 66");
-        DBH.close();
-        // Assert
-        assertTrue(!rs.next());
+    @Test
+    void sendMessage() {
 
-        // tear down
-        DBH.open();
-        Statement update = DBH.con.createStatement();
-        update.executeUpdate("INSERT INTO contacts VALUES (66, 27), (27, 66)");
-        DBH.close();
-    }
-
-    @org.junit.jupiter.api.Test
-    void isConnected() {
-    }
-
-    @org.junit.jupiter.api.Test
-    void register() {
-    }
-
-    @org.junit.jupiter.api.Test
-    void disconnect() {
-    }
-
-    @org.junit.jupiter.api.Test
-    void testDisconnect() {
-    }
-
-    @org.junit.jupiter.api.Test
-    void getUserKey() {
-    }
-
-    @org.junit.jupiter.api.Test
-    void run() {
     }
 
     private static class DBH {

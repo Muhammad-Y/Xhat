@@ -98,10 +98,10 @@ public class ClientConnectionDB implements Runnable, UserListener {
                 if (rs.getString(2) != null)
                     ServerConnection.getClientThread(rs.getString(1)).transferContactList();
             }
+            dbh.close();
         } catch (IOException | SQLException e) {
             e.printStackTrace();
         }
-        dbh.close();
     }
 
     private void receiveMessage(Object obj) throws ClassNotFoundException, IOException {
@@ -116,14 +116,13 @@ public class ClientConnectionDB implements Runnable, UserListener {
     }
 
     private void receiveContactRequest(Object requestObj) {
-        System.out.println("HAJ");
         String[] newContactRequest;
         if (requestObj instanceof String[]) {
             newContactRequest = (String[]) requestObj;
             boolean declineRequest = Boolean.parseBoolean(newContactRequest[1]);
             String requestedUser = newContactRequest[0];
-            dbh.open();
             try {
+                dbh.open();
                 if (dbh.checkUsername(requestedUser)) {
                     if (declineRequest) {
                         dbh.removeContactRequest(requestedUser, user.toString());
@@ -147,10 +146,10 @@ public class ClientConnectionDB implements Runnable, UserListener {
                         }
                     }
                 }
+                dbh.close();
             } catch (SQLException | IOException e) {
                 e.printStackTrace();
             }
-            dbh.close();
         } else {
             logListener.logError("receiveContactRequest() Received invalid contactRequest-obj from " + user.toString());
         }
@@ -163,8 +162,8 @@ public class ClientConnectionDB implements Runnable, UserListener {
      */
     private void receiveRemoveContact(Object contactObj) {
         if (contactObj instanceof String) {
-            dbh.open();
             try {
+                dbh.open();
                 dbh.removeContact(user.toString(), (String) contactObj);
                 dbh.removeContact((String) contactObj, user.toString());
                 logListener.logInfo("receiveRemoveContact() " + user.toString() + " removed " + (String) contactObj + " from contacts");
@@ -173,11 +172,10 @@ public class ClientConnectionDB implements Runnable, UserListener {
                 if (cc != null) {
                     cc.transferContactList();
                 }
+                dbh.close();
             } catch (SQLException | IOException e) {
                 e.printStackTrace();
             }
-            dbh.close();
-
         } else {
             logListener.logInfo("receiveRemoveContact() contact not found: " + (String) contactObj);
         }
@@ -189,20 +187,25 @@ public class ClientConnectionDB implements Runnable, UserListener {
             String groupName = newGroup[0];
             String[] memberNames = new String[newGroup.length - 1];
             for (int i = 1; i < newGroup.length; i++) memberNames[i - 1] = newGroup[i];
-            dbh.open();
-            dbh.addGroup(groupName, memberNames);
-            String groupID = dbh.getGroupID(groupName);
-            Group group = clientsManager.newGroup(user, groupName, memberNames, groupID);
-            dbh.close();
+            String groupID = null;
+            Group group = null;
+            try {
+                dbh.open();
+                dbh.addGroup(groupName, memberNames);
+                groupID = dbh.getGroupID(groupName);
+                dbh.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+            group = clientsManager.newGroup(user, groupName, memberNames, groupID);
             String newGroupId = group.getGroupId();
-            for(User member : group.getMembers())
+            for (User member : group.getMembers())
                 member.getClientConnection().updateGroupList(group);
             if (newGroupId != null) {
                 logListener.logInfo("newGroup() new group by " + user.getUserName() + " created: " + groupName + ", ID: " + newGroupId);
                 transferEncryptionKeyToRecipients(group);
             }
-        }
-        else logListener.logError("newGroup() Received invalid newGroup-obj from " + user.toString());
+        } else logListener.logError("newGroup() Received invalid newGroup-obj from " + user.toString());
     }
 
     private void receiveLeaveGroup(Object groupIdObj) throws IOException {
@@ -219,20 +222,28 @@ public class ClientConnectionDB implements Runnable, UserListener {
     }
 
     private LinkedList<User> getRecipients(Message message) {
-        LinkedList<User> recipients = new LinkedList<User>();
-        String recipient = message.getRecipient();
+        LinkedList<User> recipients = new LinkedList<>();
+        String recipient = message.getRecipient(), result = null;
         if (message.isGroupMessage()) {
             Group group = clientsManager.getGroup(recipient);
             if (group != null && group.isMember(user)) {
-                recipients = group.getMembers();
+                for (User user : group.getMembers()) {
+                    recipients.add(user);
+                }
                 recipients.remove(user);
             } else {
                 logListener.logError("getRecipients() group not found: " + message.getRecipient());
             }
         } else {
-            User user = clientsManager.getUser(recipient);
-            if (user != null) {
-                recipients.add(user);
+            try {
+                dbh.open();
+                result = dbh.getUserName(recipient);
+                dbh.close();
+            } catch (SQLException e) {
+                logListener.logError("SQLException: Couldn't get recipient from DB");
+            }
+            if (result != null) {
+                recipients.add(result);
             } else {
                 logListener.logError("getRecipients() user not found: " + message.getRecipient());
             }
@@ -248,6 +259,13 @@ public class ClientConnectionDB implements Runnable, UserListener {
                 if (clientConnection != null) {
                     clientConnection.transferMessage(message);
                 } else {
+                    /*try {
+                        dbh.open();
+                        dbh.addMessageToBuffer(message);
+                        dbh.close();
+                    } catch (SQLException e) {
+                        logListener.logError("SQLException: unable to save message in DB");
+                    }*/
                     user.addMessageToBuffer(message);
                     logListener.logInfo("Buffered message for: " + user.toString());
                 }
@@ -284,9 +302,10 @@ public class ClientConnectionDB implements Runnable, UserListener {
      * @throws IOException
      */
     private void transferContactList() throws IOException {
-        dbh.open();
         try {
+            dbh.open();
             String[][] contacts = dbh.getContactsArray(user.toString());
+            dbh.close();
             int nbrOfContacts = contacts.length;
             oos.writeObject("ContactList");
             oos.writeObject(contacts);
@@ -298,9 +317,10 @@ public class ClientConnectionDB implements Runnable, UserListener {
     }
 
     private void transferGroupChats() throws IOException {
-        dbh.open();
         try {
+            dbh.open();
             String[][] groups = dbh.getGroupsArray(user.toString());
+            dbh.close();
             oos.writeObject("GroupChats");
             oos.writeObject(groups);
             oos.flush();
@@ -308,16 +328,29 @@ public class ClientConnectionDB implements Runnable, UserListener {
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        dbh.close();
     }
 
     private void transferBufferedMessages() throws IOException {
         Message[] bufferedMessages = user.getBufferedMessagesArray();
+        try {
+            dbh.open();
+            dbh.getBufferedMessagesArray(user.toString());
+            dbh.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
         int nbrOfMessages = bufferedMessages.length;
         if (nbrOfMessages > 0) {
             oos.writeObject("BufferedMessages");
             oos.writeObject(bufferedMessages);
             oos.flush();
+            try {
+                dbh.open();
+                dbh.removeBufferedMessages(user.toString());
+                dbh.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
             user.removeNBufferedMessages(nbrOfMessages);
             logListener.logInfo(nbrOfMessages + " buffered messages transferred to: " + user.toString());
         }
@@ -325,13 +358,13 @@ public class ClientConnectionDB implements Runnable, UserListener {
 
     private void transferContactRequests() throws IOException {
         String[] contactRequests = null;
-        dbh.open();
         try {
+            dbh.open();
             contactRequests = dbh.getContactRequestsArray(user.toString());
+            dbh.close();
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        dbh.close();
         if (contactRequests != null) {
             for (String userName : contactRequests) {
                 transferContactRequest(userName);
@@ -347,8 +380,8 @@ public class ClientConnectionDB implements Runnable, UserListener {
     private void transferSearchResults(Object searchObj) throws IOException {
         String searchString;
         if (searchObj instanceof String && (searchString = (String) searchObj).length() >= 2) {
-            dbh.open();
             try {
+                dbh.open();
                 String[] results = dbh.searchUser(searchString, user);
                 dbh.close();
                 oos.writeObject("SearchResult");
@@ -380,29 +413,32 @@ public class ClientConnectionDB implements Runnable, UserListener {
                 String username, password;
                 username = credentials[0];
                 password = credentials[1];
-                dbh.open();
-                if (dbh.verifyLogin(username, password)) {
-                    dbh.close();
-                    oos.writeBoolean(true);
-                    oos.flush();
-                    user = clientsManager.getUser(username);
-                    if(user == null){
-                        user = new User(username, password);
-                        clientsManager.addUser(user);
+                try {
+                    dbh.open();
+                    if (dbh.verifyLogin(username, password)) {
+                        dbh.close();
+                        oos.writeBoolean(true);
+                        oos.flush();
+                        user = clientsManager.getUser(username);
+                        if (user == null) {
+                            user = new User(username, password);
+                            clientsManager.addUser(user);
+                        }
+                        ClientConnectionDB clientConnection = ServerConnection.getClientThread(user.toString());
+                        if (clientConnection != null) clientConnection.disconnectClient();
+                        ServerConnection.setThreadName(user.toString(), this);
+                        user.setClientConnection(ServerConnection.getClientThread(user.toString()));
+                        success = true;
+                    } else {
+                        dbh.close();
+                        logListener.logError("Client login failed: wrong userName or password.");
+                        oos.writeBoolean(false);
+                        oos.flush();
                     }
-                    ClientConnectionDB clientConnection = ServerConnection.getClientThread(user.toString());
-                    if (clientConnection != null) clientConnection.disconnectClient();
-                    ServerConnection.setThreadName(user.toString(), this);
-                    user.setClientConnection(ServerConnection.getClientThread(user.toString()));
-                    success = true;
-                } else {
-                    dbh.close();
-                    logListener.logError("Client login failed: wrong userName or password.");
-                    oos.writeBoolean(false);
-                    oos.flush();
+                } catch (SQLException e) {
+                    e.printStackTrace();
                 }
-            }
-            else logListener.logError("login() Received non-string[] credentials from client.");
+            } else logListener.logError("login() Received non-string[] credentials from client.");
         } catch (IOException e) {
             logListener.logError("Client login timeout");
         }
@@ -420,29 +456,26 @@ public class ClientConnectionDB implements Runnable, UserListener {
                 boolean passwordOk = password.length() > 0 && password.length() <= 20;
                 if (userNameOk && passwordOk) {
                     User newUser = new User(userName, password);
-                    dbh.open();
                     try {
+                        dbh.open();
                         result = dbh.registerNewUser(newUser);
+                        dbh.close();
                     } catch (SQLException e) {
                         e.printStackTrace();
                     }
-                    dbh.close();
                     if (result == ResultCode.ok) {
                         clientsManager.addUser(newUser);
                         logListener.logInfo("User registered: " + userName);
-                    }
-                    else if (result == ResultCode.userNameAlreadyTaken) logListener.logInfo("User name already taken: " + userName);
-                }
-                else {
+                    } else if (result == ResultCode.userNameAlreadyTaken)
+                        logListener.logInfo("User name already taken: " + userName);
+                } else {
                     if (!userNameOk && !passwordOk) {
                         logListener.logError("Registration failed: Username and password have wrong format.");
                         result = ResultCode.wrongCredentials;
-                    }
-                    else if (!userNameOk) {
+                    } else if (!userNameOk) {
                         logListener.logError("Registration failed: Username has wrong format.");
                         result = ResultCode.wrongUsernameFormat;
-                    }
-                    else {
+                    } else {
                         logListener.logError("Registration failed: Password has wrong format.");
                         result = ResultCode.wrongPasswordFormat;
                     }
@@ -453,8 +486,7 @@ public class ClientConnectionDB implements Runnable, UserListener {
                     KeyPair keyPair = Encryption.doGenkey(userName);
                     transferEncryptionKey(keyPair.getPrivate().getEncoded(), 0);
                 }
-            }
-            else logListener.logError("register() Received non-string[] credentials from client.");
+            } else logListener.logError("register() Received non-string[] credentials from client.");
         } catch (IOException | NoSuchAlgorithmException e) {
             logListener.logError("Client registration timeout");
         }
@@ -472,10 +504,10 @@ public class ClientConnectionDB implements Runnable, UserListener {
                 oos.writeObject(FileUtils.readFileToByteArray(new File("data/" + o + ".pub")));
                 logListener.logCommunication("Sent encryption key for " + o);
             }
-            if(type == 2){
+            if (type == 2) {
                 oos.writeObject("GroupKey");
-                oos.writeObject(((ArrayList<Object>)o).get(0));
-                oos.writeObject(((ArrayList<Object>)o).get(1));
+                oos.writeObject(((ArrayList<Object>) o).get(0));
+                oos.writeObject(((ArrayList<Object>) o).get(1));
             }
             oos.flush();
         } catch (IOException e) {
@@ -532,14 +564,14 @@ public class ClientConnectionDB implements Runnable, UserListener {
                             loggedIn = login(ois.readObject());
                             if (loggedIn) {
                                 logListener.logInfo("User logged in: " + user.toString());
-                                dbh.open();
                                 try {
+                                    dbh.open();
                                     dbh.setToOnline(user.toString());
                                     dbh.setLoginTime(user.toString());
+                                    dbh.close();
                                 } catch (SQLException e) {
                                     logListener.logError("LoginError " + e);
                                 }
-                                dbh.close();
                                 transferContactList();
                                 transferGroupChats();
                                 transferBufferedMessages();

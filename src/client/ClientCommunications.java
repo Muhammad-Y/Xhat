@@ -23,8 +23,8 @@ public class ClientCommunications implements Runnable {
 	private ObjectOutputStream oos;
 	private boolean loggedIn;
 	private MainController mainController;
+	private Data data;
 	// TODO remove after testing
-	/*private*/ Data data;
 	String[] results;
 
 	public ClientCommunications(String ip, int port, Data data) {
@@ -160,9 +160,9 @@ public class ClientCommunications implements Runnable {
 				ClientLogger.logError("Registration failed(IOException): " + e.getMessage());
 			}
 		}
-		disconnect();
 		if(result == ResultCode.ok)
 			receiveEncryptionKey(key, userName, true);
+		disconnect();
 		return result;
 	}
 	
@@ -200,7 +200,7 @@ public class ClientCommunications implements Runnable {
 	private void receiveContactList(Object contactsObj) throws ClassNotFoundException, IOException {
 		if (contactsObj instanceof String[][]) {
 			String[][] contacts = (String[][])contactsObj;
-			// data.removeContacts(contacts);
+			data.removeContacts(contacts);
 			for (int i = 0; i < contacts.length; i++) {
 				String contactName = contacts[i][0];
 				boolean isOnline = Boolean.parseBoolean(contacts[i][1]);
@@ -224,7 +224,6 @@ public class ClientCommunications implements Runnable {
 			data.clearGroups();
 			for (int i = 0; i < groups.length; i++) {
 				data.addGroup(groups[i][0], groups[i][1]);
-				//TODO Om gruppen redan existerar?
 			}
 			mainController.updateGroupList();
 			ClientLogger.logInfo("Received and processed groupChats");
@@ -247,7 +246,7 @@ public class ClientCommunications implements Runnable {
 		}
 	}
 
-	/*private*/ void receiveMessage(Object obj) {
+	private void receiveMessage(Object obj) {
 		if(obj instanceof Message) {
 			Message message = (Message)obj;
 			Contact senderContact = null;
