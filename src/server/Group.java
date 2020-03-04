@@ -13,6 +13,14 @@ public class Group implements Serializable {
 		this.members = members;
 		this.groupId = groupId;
 	}
+
+	public Group(String groupName, String groupId) {
+		this.groupName = groupName;
+		this.groupId = groupId;
+		this.members = new LinkedList<>();
+	}
+
+	public void addMember(User user) { members.add(user); }
 	
 	public String getGroupName() {
 		return groupName;

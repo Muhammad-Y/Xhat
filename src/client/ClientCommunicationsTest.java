@@ -1,19 +1,26 @@
 package client;
 
 import common.Message;
+
+import java.io.*;
 import java.sql.*;
+
+import common.ResultCode;
 import org.junit.jupiter.api.Test;
+import server.*;
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * OBS!
+ * För att köra dessa tester: Starta först InitServer (i server-paketet)
+ * Kör sedan testerna metod för metod.
+ */
 class ClientCommunicationsTest {
 
-    /**
-     * for localhost server: Run InitServer.main()
-     */
-    // VALID INPUT:
+    // VALID INPUT
 
     @Test
-    void login() {
+    void validLogin() {     // FK_LIU_1, FK_LIU_1.2, FK_DBK_1
         // Arrange
         ClientCommunications cc = new ClientCommunications("127.0.0.1", 5555, new Data());
         // Act
@@ -25,7 +32,7 @@ class ClientCommunicationsTest {
     }
 
     @Test
-    void sendNewContactRequest() throws Exception {
+    void validContactRequest() throws Exception {   // FK_KO_3.1, KK_AV_4, FK_KO_3.3
         // Arrange
         ClientCommunications cc = new ClientCommunications("127.0.0.1", 5555, new Data());
         cc.login("Test1", "password");
@@ -49,7 +56,7 @@ class ClientCommunicationsTest {
     }
 
     @Test
-    void sendTextMessageToOnlineUser() throws Exception {
+    void validTextMessageToOnlineUser() throws Exception {      // FK_KO_1.1, FK_KO_1.3
         // Arrange
         ClientCommunications cc1 = new ClientCommunications("127.0.0.1", 5555, new Data());
         cc1.login("Test1", "password");
@@ -68,20 +75,20 @@ class ClientCommunicationsTest {
     }
 
     @Test
-    void sendTextMessageToOfflineUser() throws Exception {
+    void validTextMessageToOfflineUser() throws Exception {     // FK_KO_1.1, FK_KO_1.3, FK_L_4, FK_L_5
         // Arrange
         ClientCommunications cc1 = new ClientCommunications("127.0.0.1", 5555, new Data());
         ClientCommunications cc2 = new ClientCommunications("127.0.0.1", 5555, new Data());
         cc1.login("Test1", "password");
-        byte[] payload = "sending testmess".getBytes();
+        byte[] payload = "testmess".getBytes();
         Thread.sleep(5000);
         // Act
         boolean success = cc1.sendMessage(new Message("Test6", false, null, Message.TYPE_TEXT, payload));
-        Thread.sleep(10000);
+        Thread.sleep(5000);
         cc1.disconnect();
         Thread.sleep(5000);
         // Assert
-        if(success) {
+        if (success) {
             cc2.login("Test6", "password");
             Thread.sleep(5000);
         }
@@ -91,7 +98,7 @@ class ClientCommunicationsTest {
     }
 
     @Test
-    void searchUser() throws Exception {
+    void validSearch() throws Exception {
         // Arrange
         ClientCommunications cc = new ClientCommunications("127.0.0.1", 5555, new Data());
         cc.login("Test1", "password");
@@ -111,10 +118,8 @@ class ClientCommunicationsTest {
         assertTrue(equals);
     }
 
-
-
     @Test
-    void removeContact() throws Exception {
+    void validRemoveContact() throws Exception {    // FK_KO_3.2, KK_AV_3.1
         // Arrange
         ClientCommunications cc = new ClientCommunications("127.0.0.1", 5555, new Data());
         cc.login("Test1", "password");
@@ -139,12 +144,12 @@ class ClientCommunicationsTest {
     }
 
     @Test
-    void register() throws Exception {
+    void validRegistration() throws Exception {     // FK_L_1.1
         // Arrange
         String name = "unitTest5", password = "word";
         ClientCommunications cc = new ClientCommunications("127.0.0.1", 5555, new Data());
         // Act
-        cc.register(name, password);
+        int result = cc.register(name, password);
         Thread.sleep(5000);
         // Assert
         DBH.open();
@@ -152,7 +157,7 @@ class ClientCommunicationsTest {
         pst.setObject(1, name);
         ResultSet rs = pst.executeQuery();
         DBH.close();
-        assertTrue(rs.next());
+        assertTrue(rs.next() && result == ResultCode.ok);
         // Tear down
         DBH.open();
         pst = DBH.con.prepareStatement("DELETE FROM users WHERE username = (?)");
@@ -162,60 +167,135 @@ class ClientCommunicationsTest {
         cc.disconnect();
     }
 
+    // INVALID INPUT
+
     @Test
-    void isConnected() {
+    void invalidLogin() throws Exception {  // FK_LIU_1.1
+        // Arrange
+        ClientCommunications cc = new ClientCommunications("127.0.0.1", 5555, new Data());
+        // Act
+        boolean loggedIn = cc.login("Fest1", "password");
+        // Assert
+        assertFalse(loggedIn);
+        // Tear down
+        cc.disconnect();
     }
 
     @Test
-    void disconnect() {
+    void invalidContactRequest() throws Exception {
+        // Arrange
+        ClientCommunications cc = new ClientCommunications("127.0.0.1", 5555, new Data());
+        cc.login("Test1", "password");
+        String[] request = {"Test6", "false"};
+        Thread.sleep(5000);
+        // Act
+        cc.sendNewContactRequest(request);
+        Thread.sleep(5000);
+        // Assert
+        DBH.open();
+        Statement query = DBH.con.createStatement();
+        ResultSet rs = query.executeQuery("SELECT 1 FROM contactrequests WHERE to_id = 10 AND from_id = 66");
+        DBH.close();
+        assertFalse(rs.next());
+        // Tear down
+        DBH.open();
+        Statement update = DBH.con.createStatement();
+        update.executeUpdate("DELETE FROM contactrequests WHERE to_id = 10 AND from_id = 66");
+        DBH.close();
+        cc.disconnect();
     }
 
     @Test
-    void getUserKey() {
+    void invalidTextMessageToOnlineUser() throws Exception { // KK_PRE_2
+        // Arrange
+        ClientCommunications cc1 = new ClientCommunications("127.0.0.1", 5555, new Data());
+        cc1.login("Test1", "password");
+        ClientCommunications cc2 = new ClientCommunications("127.0.0.1", 5555, new Data());
+        cc2.login("Test6", "password");
+        StringBuilder sb = new StringBuilder();
+        while(sb.length() <= 3000) {
+            sb.append("a");
+        }
+        byte[] payload = sb.toString().getBytes();
+        Thread.sleep(5000);
+        // Act
+        boolean success = cc1.sendMessage(new Message("Test6", false, null, Message.TYPE_TEXT, payload));
+        Thread.sleep(5000);
+        // Assert
+        assertFalse(success);
+        // Tear down
+        cc1.disconnect();
+        cc2.disconnect();
     }
 
-    /*@org.junit.jupiter.api.Test
-    void createNewGroup() throws Exception {
+    @Test
+    void invalidTextMessageToOfflineUser() throws Exception {   // KK_PRE_2
+        // Arrange
+        ClientCommunications cc1 = new ClientCommunications("127.0.0.1", 5555, new Data());
+        ClientCommunications cc2 = new ClientCommunications("127.0.0.1", 5555, new Data());
+        cc1.login("Test1", "password");
+        StringBuilder sb = new StringBuilder();
+        while(sb.length() <= 3000) {
+            sb.append("a");
+        }
+        byte[] payload = sb.toString().getBytes();
+        Thread.sleep(5000);
+        // Act
+        boolean success = cc1.sendMessage(new Message("Test6", false, null, Message.TYPE_TEXT, payload));
+        Thread.sleep(5000);
+        cc1.disconnect();
+        Thread.sleep(5000);
+        // Assert
+        if (success) {
+            cc2.login("Test6", "password");
+            Thread.sleep(5000);
+        }
+        assertFalse(success);
+        // Tear down
+        cc2.disconnect();
+    }
+
+    @Test
+    void invalidSearch() throws Exception {
         // Arrange
         ClientCommunications cc = new ClientCommunications("127.0.0.1", 5555, new Data());
         cc.login("Test1", "password");
         Thread.sleep(5000);
-        String[] newGroup = {"unitTestGroup", "Test1", "Test6", "Test15"};
+        boolean equals = false;
+        String request = "u";
+        String[] result = {"unitTest1", "unitTest2", "unitTest3", "unitTest4"};
         // Act
-        cc.createNewGroup(newGroup);
+        cc.searchUser(request);
         Thread.sleep(5000);
-        DBH.open();
-        Statement query = DBH.con.createStatement();
-        ResultSet rs = query.executeQuery(
-                "SELECT groupname, username FROM groups " +
-                        "JOIN groupmembers ON g_id = group_id " +
-                        "JOIN users ON u_id = user_id AND groupname = newGroup[0]");
-        DBH.close();
         // Assert
-        boolean equals = true;
-        int index = 0;
-        while (rs.next()) {
-            if (!rs.getString(1).equals(newGroup[0])
-                    && rs.getString(2).equals(newGroup[++index])) {
-                equals = false;
-            }
+        if(cc.results != null) {
+            equals = true;
+            for (int i = 0; i < result.length; i++)
+                if (!result[i].equals(cc.results[i])) {
+                    equals = false;
+                    break;
+                }
         }
-        assertTrue(equals);
-
-        // manual tear down
-        // select group_id from groups where groupname = 'unitTestGroup'
-        // delete from groupmembers where g_id = ?
-        // delete from groups where groupname = 'unitTestGroup'
-    }*/
-
-    @Test
-    void leaveGroup() {
+        assertFalse(equals);
     }
 
     @Test
-    void sendMessage() {
-
+    void invalidRegistration() throws Exception {   // FK_L_1.3
+        // Arrange
+        String name = "Test1", password = "password";
+        ClientCommunications cc = new ClientCommunications("127.0.0.1", 5555, new Data());
+        // Act
+        int result = cc.register(name, password);
+        Thread.sleep(5000);
+        // Assert
+        DBH.open();
+        PreparedStatement pst = DBH.con.prepareStatement("SELECT 1 FROM users WHERE username = (?)");
+        pst.setObject(1, name);
+        ResultSet rs = pst.executeQuery();
+        DBH.close();
+        assertTrue(rs.next() && result == ResultCode.userNameAlreadyTaken);
     }
+
 
     private static class DBH {
         private static Connection con;
@@ -244,6 +324,26 @@ class ClientCommunicationsTest {
             } catch (SQLException e) {
                 e.printStackTrace();
             }
+        }
+    }
+
+    private static class LocalServer extends Thread {
+
+        public void run() {
+            ThreadPool threadPool = new ThreadPool(30);
+            threadPool.start();
+
+            //		ServerLogger serverLogger = new ServerLogger();
+            ClientsManager clientsManager = new ClientsManager(threadPool);
+            try {
+                clientsManager.setUsers(StorageHandler.loadUsersFromFile());
+                clientsManager.setGroups(StorageHandler.loadGroupsFromFile());
+            } catch (IOException | ClassNotFoundException e) {
+                e.printStackTrace();
+            }
+
+            ServerConnection serverConnection = new ServerConnection(5555, clientsManager, threadPool);
+            new ServerController(serverConnection);
         }
     }
 }

@@ -1,5 +1,6 @@
 package server;
 
+import org.postgresql.core.SqlCommand;
 import server.database.DBHandler;
 
 import java.io.IOException;
@@ -36,6 +37,10 @@ public class ServerConnection implements Runnable {
 	}
 	
 	public void shutdownServer() {
+		try {
+			StorageHandler.writeToFile(clientsManager.users, "users.dat");
+			StorageHandler.writeToFile(clientsManager.groups, "groups.dat");
+		} catch (IOException e) { e.printStackTrace(); }
 		System.exit(0);
 	}
 
@@ -56,15 +61,14 @@ public class ServerConnection implements Runnable {
 		try (ServerSocket serverSocket = new ServerSocket(listeningPort)) {
 			logListener.logInfo("Server listening on: " + InetAddress.getLocalHost().getHostAddress() + ":" + serverSocket.getLocalPort());
 			dbh  = new DBHandler();
-			dbh.open();
+	/*		dbh.open();
 			dbh.resetOnlineStatus();
-			dbh.close();
+			dbh.close();*/
 			while (!Thread.interrupted()) {
 				Socket socket = serverSocket.accept();
-				//new ClientConnection(socket, clientsManager, threadPool, logListener);
 				new ClientConnectionDB(socket, clientsManager, dbh, threadPool, logListener);
 			}
-		} catch (IOException | SQLException e) {
+		} catch (IOException e) {
 			logListener.logError("Server error: " + e.getMessage());
 			e.printStackTrace();
 		}

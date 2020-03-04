@@ -21,13 +21,13 @@ public class Data {
 	}
 
 	public void removeContacts(String[][] contacts) {
-		int i = 0;
+		/*int i = 0;
 		for(String[] contact : contacts){
 			String name =  contact[i++];
 			if(this.contacts.get(name)==null)
 				this.contacts.remove(name);
 		}
-		if(contacts.length==0) this.contacts.clear();
+		if(contacts.length==0) this.contacts.clear();*/
 	}
 	
 	public Contact getContact(String contactName) {

@@ -18,7 +18,7 @@ public final class StorageHandler {
 		}
 	}
 
-	public static Map<String,User> loadUsersFromFile() throws FileNotFoundException, IOException, ClassNotFoundException {
+	public static Map<String,User> loadUsersFromFile() throws IOException, ClassNotFoundException {
 		Map<String,User> users = null;
 		try(ObjectInputStream ois = new ObjectInputStream(new FileInputStream("data/users.dat"))) {
 			Object obj = ois.readObject();
@@ -31,7 +31,7 @@ public final class StorageHandler {
 		return users;
 	}
 
-	public static Map<String,Group> loadGroupsFromFile() throws FileNotFoundException, IOException, ClassNotFoundException {
+	public static Map<String,Group> loadGroupsFromFile() throws IOException, ClassNotFoundException {
 		Map<String,Group> groups = null;
 		try(ObjectInputStream ois = new ObjectInputStream(new FileInputStream("data/groups.dat"))) {
 			Object obj = ois.readObject();
@@ -43,5 +43,4 @@ public final class StorageHandler {
 		}
 		return groups;
 	}
-
 }

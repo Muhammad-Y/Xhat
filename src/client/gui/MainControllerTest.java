@@ -49,7 +49,7 @@ class MainControllerTest {
         // Arrange
         MainController mc = new MainController(
                 new ClientCommunications("127.0.0.1", 5555, new Data()), new Data());
-        String[][] contacts = {
+        String[][] contacts = new String[][]{
                 {"testContact1", "false"},
                 {"testContact2", "true"},
                 {"testContact3", "false"}
@@ -66,32 +66,6 @@ class MainControllerTest {
         assertEquals(contacts[0][0], mc.contactsModel.get(0).getText());
         assertEquals(contacts[1][0], mc.contactsModel.get(1).getText());
         assertEquals(contacts[2][0], mc.contactsModel.get(2).getText());
-    }
-
-    @Test
-    void getUserName() {
-        // Arrange
-        MainController mc = new MainController(
-                new ClientCommunications("127.0.0.1", 5555, new Data()), new Data());
-        // Act
-        String name = mc.getUserName();
-        // Assert
-        assertEquals(null, name);
-    }
-
-    @Test
-    void sendStandardTextMessage() throws Exception {
-        // Arrange
-        ClientCommunications cc = new ClientCommunications("127.0.0.1", 5555, new Data());
-        cc.login("Test1", "password");
-        String recipient = "Test6";
-        byte[] payload = "tjena mittbena".getBytes();
-        Message message = new Message(recipient, false, null, Message.TYPE_TEXT, payload);
-        // Act
-        boolean success = cc.sendMessage(message);
-        Thread.sleep(5000);
-        // Assert
-        assertTrue(success);
     }
 
     @Test

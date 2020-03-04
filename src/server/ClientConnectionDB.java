@@ -94,11 +94,14 @@ public class ClientConnectionDB implements Runnable, UserListener {
         try {
             dbh.open();
             ResultSet rs = dbh.getContacts(user.toString());
-            while (rs.next()) {
-                if (rs.getString(2) != null)
-                    ServerConnection.getClientThread(rs.getString(1)).transferContactList();
-            }
             dbh.close();
+            while (rs.next()) {
+                if (rs.getString(2) != null) {
+                    ClientConnectionDB cc = ServerConnection.getClientThread(rs.getString(1));
+                    if(cc != null)
+                        cc.transferContactList();
+                }
+            }
         } catch (IOException | SQLException e) {
             e.printStackTrace();
         }
@@ -235,17 +238,11 @@ public class ClientConnectionDB implements Runnable, UserListener {
                 logListener.logError("getRecipients() group not found: " + message.getRecipient());
             }
         } else {
-            try {
-                dbh.open();
-                result = dbh.getUserName(recipient);
-                dbh.close();
-            } catch (SQLException e) {
-                logListener.logError("SQLException: Couldn't get recipient from DB");
-            }
-            if (result != null) {
-                recipients.add(result);
+            User user = clientsManager.getUser(recipient);
+            if (user != null) {
+                recipients.add(user);
             } else {
-                logListener.logError("getRecipients() user not found: " + message.getRecipient());
+                logListener.logError("getRecipients() user not found: " + recipient);
             }
         }
         return recipients;
@@ -259,13 +256,6 @@ public class ClientConnectionDB implements Runnable, UserListener {
                 if (clientConnection != null) {
                     clientConnection.transferMessage(message);
                 } else {
-                    /*try {
-                        dbh.open();
-                        dbh.addMessageToBuffer(message);
-                        dbh.close();
-                    } catch (SQLException e) {
-                        logListener.logError("SQLException: unable to save message in DB");
-                    }*/
                     user.addMessageToBuffer(message);
                     logListener.logInfo("Buffered message for: " + user.toString());
                 }
@@ -332,25 +322,11 @@ public class ClientConnectionDB implements Runnable, UserListener {
 
     private void transferBufferedMessages() throws IOException {
         Message[] bufferedMessages = user.getBufferedMessagesArray();
-        try {
-            dbh.open();
-            dbh.getBufferedMessagesArray(user.toString());
-            dbh.close();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
         int nbrOfMessages = bufferedMessages.length;
         if (nbrOfMessages > 0) {
             oos.writeObject("BufferedMessages");
             oos.writeObject(bufferedMessages);
             oos.flush();
-            try {
-                dbh.open();
-                dbh.removeBufferedMessages(user.toString());
-                dbh.close();
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
             user.removeNBufferedMessages(nbrOfMessages);
             logListener.logInfo(nbrOfMessages + " buffered messages transferred to: " + user.toString());
         }
@@ -570,7 +546,7 @@ public class ClientConnectionDB implements Runnable, UserListener {
                                     dbh.setLoginTime(user.toString());
                                     dbh.close();
                                 } catch (SQLException e) {
-                                    logListener.logError("LoginError " + e);
+                                    logListener.logError("LoginError on " + user.toString() +" "+ e);
                                 }
                                 transferContactList();
                                 transferGroupChats();

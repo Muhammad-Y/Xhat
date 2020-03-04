@@ -9,6 +9,7 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.Random;
 
+import server.ClientsManager;
 import server.Group;
 import server.LogListener;
 import server.User;

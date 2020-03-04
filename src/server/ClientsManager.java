@@ -9,8 +9,8 @@ import java.util.*;
 
 public class ClientsManager {
 	private ThreadPool threadPool;
-	private Map<String,User> users = Collections.synchronizedMap(new HashMap<>());
-	private Map<String,Group> groups = Collections.synchronizedMap(new HashMap<>());
+	Map<String,User> users = Collections.synchronizedMap(new HashMap<>());
+	Map<String,Group> groups = Collections.synchronizedMap(new HashMap<>());
 	
 	public ClientsManager(ThreadPool threadPool) {
 		this.threadPool = threadPool;
@@ -59,4 +59,8 @@ public class ClientsManager {
 			return groups.get(groupId);
 		}
 	}
+
+	public void setUsers(Map<String, User> users) { this.users = users; }
+
+	public void setGroups(Map<String, Group> groups) { this.groups = groups; }
 }
