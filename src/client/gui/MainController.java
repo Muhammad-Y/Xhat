@@ -7,6 +7,9 @@ import org.apache.commons.io.FileUtils;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 import java.io.File;
 import java.util.*;
 import java.util.Timer;
@@ -329,14 +332,41 @@ public class MainController {
 					else Encryption.decryptFile(file, "key/"+message.getRecipient()+".pvt");
 					file.delete();
 				}
-				ImageIcon iconLogo = new ImageIcon(message.getFilePath());
+				ImageIcon imageIcon ;
 
+				ImageIcon oldimageIcon = new ImageIcon(message.getFilePath());
+				JLabel oldpic = new JLabel(oldimageIcon);
+				Image image = oldimageIcon.getImage(); // transform it
+				Image newimg = image.getScaledInstance(120, 120,  java.awt.Image.SCALE_SMOOTH); // scale it the smooth way
+				imageIcon = new ImageIcon(newimg);  // transform it back
 				jLabelMessage = new JLabel();
-				jLabelMessage.setIcon(iconLogo);
+
+				jLabelMessage.setIcon(imageIcon);
+
+				//kommer inte funka jlabeln konverteras senare i procsesen
+				jLabelMessage.addMouseListener(new MouseAdapter() {
+					private Color background;
+
+					@Override
+					public void mousePressed(MouseEvent e) {
+						JOptionPane.showMessageDialog(null, oldimageIcon);
+
+					}
+
+					@Override
+					public void mouseReleased(MouseEvent e) {
+					}
+				});
+
+
+
+
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
 		if (jLabelMessage != null) {
+			if(jLabelMessage.getIcon() != null)
+
 			jLabelMessage.setFont(plainMessageFont);
 			contact.addMessageToConversation(jLabelMessage);
 			mainPanel.scrollDownConversation();
