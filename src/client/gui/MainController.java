@@ -7,7 +7,6 @@ import org.apache.commons.io.FileUtils;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.image.BufferedImage;
 import java.io.File;
 import java.util.*;
 import java.util.Timer;
@@ -169,16 +168,16 @@ public class MainController {
 		clientCommunications.disconnect();
 	}
 
-	public boolean sendMessage(String recipient, byte[] bytes, String filename, boolean isGroupMsg, int type) {
+	public boolean sendMessage(String recipient, byte[] bytes, String filename, boolean isGroupMsg, int type, String s) {
 		boolean success = false;
 		try {
 			if(type == Message.TYPE_TEXT) {
 				byte[] data = Encryption.encryptText(mainPanel.getMessageTxt(), mainPanel.getEncryptionKey(recipient)).getBytes("UTF-8");
-				success = clientCommunications.sendMessage(new Message(recipient, isGroupMsg, filename, type, data));
+				success = clientCommunications.sendMessage(new Message(recipient, isGroupMsg, filename, type, data,s));
 			}
-			else success = clientCommunications.sendMessage(new Message(recipient, isGroupMsg, filename, type, bytes));
+			else success = clientCommunications.sendMessage(new Message(recipient, isGroupMsg, filename, type, bytes,s));
 			if(success) {
-				Message message = new Message(recipient, isGroupMsg, filename, type, bytes);
+				Message message = new Message(recipient, isGroupMsg, filename, type, bytes,s);
 				message.setSender("You");
 				Contact contact = (isGroupMsg) ? data.getGroup(recipient) : data.getContact(recipient);
 				addMessageToConversation(contact, message, message.getType()==0);
@@ -330,7 +329,10 @@ public class MainController {
 					else Encryption.decryptFile(file, "key/"+message.getRecipient()+".pvt");
 					file.delete();
 				}
-				jLabelMessage = new JLabel(message.getFileName());
+				ImageIcon iconLogo = new ImageIcon(message.getFilePath());
+
+				jLabelMessage = new JLabel();
+				jLabelMessage.setIcon(iconLogo);
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
