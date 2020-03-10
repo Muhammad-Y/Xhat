@@ -9,10 +9,8 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
-import java.util.Collection;
-import java.util.Set;
+import java.util.*;
 import java.util.Timer;
-import java.util.TimerTask;
 
 public class MainController {
 	private DefaultListModel<JLabel> groupsModel = new DefaultListModel<>(); //Måste synkroniseras
@@ -31,7 +29,10 @@ public class MainController {
 	private Font plainMessageFont = new Font("PlainFont13", Font.PLAIN, 13);
 	private Font boldMessageFont = new Font("BoldFont13", Font.BOLD, 13);
 	private JLabel contactInFocus;
+	private LinkedList <String> undeliveredMessageQueue = new LinkedList<>();
+	private Timer notificationTimer;
     public static Timer timer;
+    private final static int NOTIFICATION_MILLISEC = 2*1000;
     private final static int DISCONNECT_MILLISEC = 50*60*1000;
     private static String ENCRYPTION_KEY;
 
@@ -43,6 +44,7 @@ public class MainController {
 		setDownloadPath();
 		showMainPanel();
 		startDisconnectTimer();
+		startNotificationTimer();
 	}
 	
 	private void showMainPanel() {
@@ -241,7 +243,26 @@ public class MainController {
 				listModel.add(0, listModel.remove(contactPos));
 			}
 		}
-		JOptionPane.showMessageDialog(frameMain, "You got a new message from " + userNameToNotify);	
+		undeliveredMessageQueue.add(userNameToNotify);
+		restartNotificationTimer();
+
+	//	JOptionPane.showMessageDialog(frameMain, "You got a new message from " + userNameToNotify);
+	}
+
+	private void showNotificationQueue() {
+		if(undeliveredMessageQueue.size() == 1) {
+			JOptionPane.showMessageDialog(frameMain, "You got a new message from " + undeliveredMessageQueue.get(1));
+			undeliveredMessageQueue.clear();
+			restartNotificationTimer();
+
+
+		} else if(undeliveredMessageQueue.size() > 1) {
+			JOptionPane.showMessageDialog(frameMain, "You got " + undeliveredMessageQueue.size() + " new messages");
+			undeliveredMessageQueue.clear();
+			restartNotificationTimer();
+		}
+
+
 	}
 	
 	private int getPosInListModel(DefaultListModel<JLabel> listModel, String contactName) {
@@ -390,5 +411,23 @@ public class MainController {
         timer.cancel();
         startDisconnectTimer();
     }
+
+	private void startNotificationTimer() {
+		TimerTask timerTask = new TimerTask() {
+
+			@Override
+			public void run() {
+				showNotificationQueue();
+
+			}
+		};
+		notificationTimer = new Timer();
+		notificationTimer.schedule(timerTask, NOTIFICATION_MILLISEC);
+	}
+	private void restartNotificationTimer() {
+		notificationTimer.cancel();
+		startNotificationTimer();
+	}
+
 
 }
