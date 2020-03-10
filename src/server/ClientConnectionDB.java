@@ -181,7 +181,8 @@ public class ClientConnectionDB implements Runnable, UserListener {
     }
 
     private void receiveNewGroup(Object obj) throws IOException, NoSuchAlgorithmException {
-        String[] newGroup = (String[]) obj;
+
+        String[] newGroup;
         if (obj instanceof String[] && (newGroup = (String[]) obj).length >= 4) {
             String groupName = newGroup[0];
             String[] memberNames = new String[newGroup.length - 1];

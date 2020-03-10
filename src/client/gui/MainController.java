@@ -204,8 +204,9 @@ public class MainController {
 				newGroup = new String[membersModel.size() + 2];
 				newGroup[0] = groupName;
 				newGroup[1] = getUserName();
-				for (int i = 2; i < newGroup.length; i++)
+				for (int i = 2; i < newGroup.length; i++) {
 					newGroup[i] = membersModel.getElementAt(i-2);
+				}
 				clientCommunications.createNewGroup(newGroup);
 				disposeFrameAddGroup();
 				JOptionPane.showMessageDialog(null, "New group successfully created: " + groupName, "Info", JOptionPane.INFORMATION_MESSAGE);
