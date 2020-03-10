@@ -9,7 +9,7 @@ public class InitClient {
 
 		//3.132.184.132
 		//use this instance if you want to connect to the server on the Virtual Machine. If the VM is off use localhost
-		//ClientCommunications clientCommunications = new ClientCommunications("3.132.184.132", 5555, data);
+		// ClientCommunications clientCommunications = new ClientCommunications("3.132.184.132", 5555, data);
 
 
 		//use this instance if you want to connect to localhost.Do not forget to start the server first on your computer (InitServer)

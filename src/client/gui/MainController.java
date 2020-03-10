@@ -293,9 +293,11 @@ public class MainController {
 			try {
 				String text = "";
 				if(message.getSender() != "You")
-					if(!message.isGroupMessage()) text = Encryption.decryptText(new String(message.getFileData()), ENCRYPTION_KEY);
-					else text = Encryption.decryptText(new String(message.getFileData()), "key/"+message.getRecipient()+".pvt");
-				else text = new String(message.getFileData());
+					if(!message.isGroupMessage()) text =
+							message.getSender() + " - " + Encryption.decryptText(new String(message.getFileData()), ENCRYPTION_KEY);
+					else text =
+							message.getSender() + " - " + Encryption.decryptText(new String(message.getFileData()), "key/"+message.getRecipient()+".pvt");
+				else text = "You - " + new String(message.getFileData());
 				jLabelMessage = new JLabel(text);
 			} catch (Exception e) {
 				e.printStackTrace();

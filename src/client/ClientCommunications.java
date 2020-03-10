@@ -337,7 +337,7 @@ public class ClientCommunications implements Runnable {
 
 	@Override
 	public void run() {
-		if (isConnected() == true) {
+		if (isConnected()) {
 			ClientLogger.logInfo("Listener started...");
 			String request = "";
 			Object obj;
