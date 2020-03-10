@@ -14,18 +14,29 @@ public class Message implements Serializable {
 	private int type;
 	private final byte[] data;
 
+	public String getFilePath() {
+		return filePath;
+	}
+
+	public void setFilePath(String filePath) {
+		this.filePath = filePath;
+	}
+
+	private String filePath ;
+
 	/**
 	 * Skapar ett Message-objekt.
 	 * @param recipient Identifierare för mottagaren.
 	 * @param isGroupMsg Anger om mottagaren är en grupp.
 	 * @param fileData Ett bild-objekt som innehåller meddelandets payload krypterat med steganografi.
 	 */
-	public Message(String recipient, boolean isGroupMsg, String filename, int type, byte[] data) {
+	public Message(String recipient, boolean isGroupMsg, String filename, int type, byte[] data, String filePath) {
 		this.recipient = recipient;
 		this.isGroupMsg = isGroupMsg;
 		this.type = type;
 		this.filename = filename;
 		this.data = data;
+		this.filePath = filePath;
 	}
 	
 	/**

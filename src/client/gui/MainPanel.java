@@ -13,8 +13,6 @@ import javax.swing.event.ListSelectionListener;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -363,6 +361,7 @@ public class MainPanel extends JPanel {
 		}
 
 		private void sendTextMessage() {
+			String files = null;
 			mainController.restartDisconnectTimer();
 			JLabel selectedContact = (isGroupInFocus) ? jlistGroupChats.getSelectedValue() : jlistContactList.getSelectedValue();
 			byte[] bytesOfMessage = null;
@@ -373,7 +372,7 @@ public class MainPanel extends JPanel {
 			}
 			if (bytesOfMessage.length > 3 * Math.pow(10, 6))  JOptionPane.showMessageDialog(null, "Please write a message consisting of less than 3 MB");
 			else if (selectedContact != null) {
-				mainController.sendMessage(selectedContact.getName(), bytesOfMessage, "", isGroupInFocus, Message.TYPE_TEXT);
+				mainController.sendMessage(selectedContact.getName(), bytesOfMessage, "", isGroupInFocus, Message.TYPE_TEXT, "");
 			}
 			else JOptionPane.showMessageDialog(null, "Please select a contact or a group.", "Info", JOptionPane.INFORMATION_MESSAGE);
 		}
@@ -387,7 +386,7 @@ public class MainPanel extends JPanel {
 					try {
 						byte[] fileData = FileUtils.readFileToByteArray(Encryption.encryptFile(file, getEncryptionKey(selectedContact.getName()), "pub"));
 						String filename = file.getName();
-						mainController.sendMessage(selectedContact.getName(), fileData, filename, isGroupInFocus, Message.TYPE_FILE);
+						mainController.sendMessage(selectedContact.getName(), fileData, filename, isGroupInFocus, Message.TYPE_FILE, file.getAbsolutePath().toString()) ;
 						new File(file.getPath()+".enc").delete();
 						removeEncryptionKey(selectedContact.getName());
 					} catch (Exception e) {
