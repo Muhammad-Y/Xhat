@@ -597,4 +597,3 @@ public class ClientConnectionDB implements Runnable, UserListener {
         }
     }
 }
-
