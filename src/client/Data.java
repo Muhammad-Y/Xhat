@@ -24,8 +24,10 @@ public class Data {
 		int i = 0;
 		for(String[] contact : contacts){
 			String name =  contact[i++];
-			if(this.contacts.get(name)==null)
-				this.contacts.remove(name);
+			if(this.contacts.get(name)==null) {
+                this.contacts.remove(name);
+                i--;
+            }
 		}
 		if(contacts.length==0) this.contacts.clear();
 	}
