@@ -197,7 +197,7 @@ public class ClientCommunications implements Runnable {
 	private void receiveContactList(Object contactsObj) throws ClassNotFoundException, IOException {
 		if (contactsObj instanceof String[][]) {
 			String[][] contacts = (String[][])contactsObj;
-			data.removeContacts(contacts);
+			//data.removeContacts(contacts);
 			for (int i = 0; i < contacts.length; i++) {
 				String contactName = contacts[i][0];
 				boolean isOnline = Boolean.parseBoolean(contacts[i][1]);
