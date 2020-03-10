@@ -22,13 +22,11 @@ public class Data {
 
 	public void removeContacts(String[][] contacts) {
 		int i = 0;
-
 		this.contacts.clear();
 		for(String[] contact : contacts) {
 			String name = contact[i++];
 			this.contacts.put(name, new Contact(name));
 		}
-
 	}
 	
 	public Contact getContact(String contactName) {
@@ -60,5 +58,4 @@ public class Data {
 	public Collection<GroupChat> getGroups() {
 		return groups.values();
 	}
-	
 }

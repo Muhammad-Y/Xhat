@@ -83,4 +83,7 @@ public class Statements {
 
     static final String resetOnlineStatus =
             "DELETE FROM users_online";
+
+    static final String setLoginTime =
+            "UPDATE users SET last_login = (?) WHERE username = (?)";
 }

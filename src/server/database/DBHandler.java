@@ -275,6 +275,19 @@ public final class DBHandler {
         pst.executeUpdate();
     }
 
+    public void setLoginTime(String username) {
+        open();
+        try {
+            PreparedStatement pst = conn.prepareStatement(Statements.setLoginTime);
+            pst.setObject(1, new java.sql.Timestamp(System.currentTimeMillis()));
+            pst.setObject(2, username);
+            pst.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        close();
+    }
+
     public boolean verifyLogin(String username, String password) {
         open();
         try{

@@ -521,6 +521,7 @@ public class ClientConnectionDB implements Runnable, UserListener {
                             if (loggedIn) {
                                 logListener.logInfo("User logged in: " + user.toString());
                                 dbh.updateOnlineStatus(user.toString());
+                                dbh.setLoginTime(user.toString());
                                 transferContactList();
                                 transferGroupChats();
                                 transferBufferedMessages();
