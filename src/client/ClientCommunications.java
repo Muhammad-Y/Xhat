@@ -70,9 +70,8 @@ public class ClientCommunications implements Runnable {
 			oos.writeObject("NewGroup");
 			oos.writeObject(newGroup);
 			oos.flush();
-			byte[] key = (byte[]) ois.readObject();
-			receiveEncryptionKey(key, newGroup[0], true);
-		} catch (IOException | ClassNotFoundException e) {
+		} catch (IOException e) {
+			System.out.println(e.toString());
 			disconnect();
 		}
 	}
