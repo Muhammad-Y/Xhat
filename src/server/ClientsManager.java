@@ -43,7 +43,8 @@ public class ClientsManager {
 		for (int i = 1; success && i < memberNames.length; i++) {
 			if (memberNames[i] != null)
 				user = getUser(memberNames[i]);
-			if (user != null) members.add(user);
+			if (user != null)
+				members.add(user);
 			else success = false;
 		}
 		if (success) {
@@ -51,6 +52,7 @@ public class ClientsManager {
 			groupId = newGroup.getGroupId();
 			groups.put(groupId, newGroup);
 		}
+		System.out.println(success);
 		return newGroup;
 	}
 

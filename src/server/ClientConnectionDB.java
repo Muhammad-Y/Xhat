@@ -181,7 +181,7 @@ public class ClientConnectionDB implements Runnable, UserListener {
 
     private void receiveNewGroup(Object obj) throws IOException, NoSuchAlgorithmException {
         String[] newGroup = (String[]) obj;
-        if (obj instanceof String[]) {// && (newGroup = (String[]) obj).length >= 4) {
+        if (obj instanceof String[] && (newGroup = (String[]) obj).length >= 4) {
             String groupName = newGroup[0];
             String[] memberNames = new String[newGroup.length - 1];
             for (int i = 1; i < newGroup.length; i++) memberNames[i - 1] = newGroup[i];
@@ -189,14 +189,13 @@ public class ClientConnectionDB implements Runnable, UserListener {
             dbh.addGroup(groupName, memberNames);
             String groupID = dbh.getGroupID(groupName);
             Group group = clientsManager.newGroup(user, groupName, memberNames, groupID);
-            dbh.close();
-            String newGroupId = group.getGroupId();
             for(User member : group.getMembers())
                 member.getClientConnection().updateGroupList(group);
-            if (newGroupId != null) {
-                logListener.logInfo("newGroup() new group by " + user.getUserName() + " created: " + groupName + ", ID: " + newGroupId);
+            if (groupID != null) {
+                logListener.logInfo("newGroup() new group by " + user.getUserName() + " created: " + groupName + ", ID: " + groupID);
                 transferEncryptionKeyToRecipients(group);
             }
+            dbh.close();
         }
         else logListener.logError("newGroup() Received invalid newGroup-obj from " + user.toString());
     }
