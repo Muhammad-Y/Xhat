@@ -251,7 +251,7 @@ public class MainController {
 
 	private void showNotificationQueue() {
 		if(undeliveredMessageQueue.size() == 1) {
-			JOptionPane.showMessageDialog(frameMain, "You got a new message from " + undeliveredMessageQueue.get(1));
+			JOptionPane.showMessageDialog(frameMain, "You got a new message from " + undeliveredMessageQueue.get(0));
 			undeliveredMessageQueue.clear();
 			restartNotificationTimer();
 
