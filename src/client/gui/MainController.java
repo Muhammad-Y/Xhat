@@ -340,7 +340,8 @@ public class MainController {
 					jLabelMessage.setIcon(convertpicture(filepath));
 
 
-					JLabel selfie = new JLabel(convertpicture(message.getFilePath()));
+					JLabel selfie = new JLabel();
+					selfie.setIcon(convertpicture(message.getFilePath()));
 
 					jLabelMessage.setFont(plainMessageFont);
 					contact.addMessageToConversation(selfie);
