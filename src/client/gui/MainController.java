@@ -335,9 +335,9 @@ public class MainController {
 					file.delete();
 
 					ImageIcon imageIcon ;
-
-					ImageIcon oldimageIcon = new ImageIcon(file.toURI().toString());
-System.out.println(file.toURI().toString());
+String filepath = downloadPath + message.getFileName();
+					ImageIcon oldimageIcon = new ImageIcon(filepath);
+System.out.println(filepath);
 					JLabel oldpic = new JLabel(oldimageIcon);
 					Image image = oldimageIcon.getImage(); // transform it
 					Image newimg = image.getScaledInstance(120, 120,  java.awt.Image.SCALE_SMOOTH); // scale it the smooth way
