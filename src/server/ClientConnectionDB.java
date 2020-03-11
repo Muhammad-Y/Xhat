@@ -189,8 +189,9 @@ public class ClientConnectionDB implements Runnable, UserListener {
             dbh.addGroup(groupName, memberNames);
             String groupID = dbh.getGroupID(groupName);
             Group group = clientsManager.newGroup(user, groupName, memberNames, groupID);
-            dbh.close();
             String newGroupId = group.getGroupId();
+            dbh.close();
+
             for(User member : group.getMembers())
                 member.getClientConnection().updateGroupList(group);
             if (newGroupId != null) {
