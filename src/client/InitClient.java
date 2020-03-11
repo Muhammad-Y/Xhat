@@ -13,7 +13,7 @@ public class InitClient {
 
 
 		//use this instance if you want to connect to localhost.Do not forget to start the server first on your computer (InitServer)
-		ClientCommunications clientCommunications = new ClientCommunications("127.0.0.1", 5555, data);
+		ClientCommunications clientCommunications = new ClientCommunications("localhost", 5000, data);
 
 		LogInController logInController = new LogInController(clientCommunications, "Test1", "password");
 

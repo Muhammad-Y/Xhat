@@ -330,7 +330,11 @@ public class MainPanel extends JPanel {
 	}
 
 	public String getEncryptionKey(String username){
-		mainController.getUserKey(username);
+	    try {
+            mainController.getUserKey(username);
+        }catch(Exception e){
+            System.out.println(" ?????????????????  " + e.toString());
+        }
 		return "key/"+username+".pub";
 	}
 
@@ -368,14 +372,16 @@ public class MainPanel extends JPanel {
 			byte[] bytesOfMessage = null;
 			try {
 				bytesOfMessage = getMessageTxt().getBytes("UTF-8");
-			} catch (UnsupportedEncodingException e) {
-				e.printStackTrace();
-			}
+
 			if (bytesOfMessage.length > 3 * Math.pow(10, 6))  JOptionPane.showMessageDialog(null, "Please write a message consisting of less than 3 MB");
 			else if (selectedContact != null) {
 				mainController.sendMessage(selectedContact.getName(), bytesOfMessage, "", isGroupInFocus, Message.TYPE_TEXT);
 			}
 			else JOptionPane.showMessageDialog(null, "Please select a contact or a group.", "Info", JOptionPane.INFORMATION_MESSAGE);
+
+            } catch (UnsupportedEncodingException e) {
+                e.printStackTrace();
+            }
 		}
 
 		private void sendFileMessage() {
@@ -408,6 +414,9 @@ public class MainPanel extends JPanel {
 						"Remove Contact", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[1]);
 				if (choice == 0) {
 					mainController.removeContact(selectedContact.getName());
+                    mainController.updateContactsList();
+					revalidate();
+					repaint();
 				}
 			}
 			else JOptionPane.showMessageDialog(null, "Please select a contact.", "Info", JOptionPane.INFORMATION_MESSAGE);

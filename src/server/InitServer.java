@@ -8,7 +8,7 @@ public class InitServer {
 
 //		ServerLogger serverLogger = new ServerLogger();
 		ClientsManager clientsManager = new ClientsManager(threadPool);
-		ServerConnection serverConnection = new ServerConnection(5555, clientsManager, threadPool);
+		ServerConnection serverConnection = new ServerConnection(5000, clientsManager, threadPool);
 		new ServerController(serverConnection);
 	}
 

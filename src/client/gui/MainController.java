@@ -173,7 +173,7 @@ public class MainController {
 		boolean success = false;
 		try {
 			if(type == Message.TYPE_TEXT) {
-				byte[] data = Encryption.encryptText(mainPanel.getMessageTxt(), mainPanel.getEncryptionKey(recipient)).getBytes("UTF-8");
+				byte[] data = Encryption.encryptText(mainPanel.getMessageTxt(), mainPanel.getEncryptionKey(recipient)).getBytes("UTF-8");//TODO: gör det när man är registrerat eller inloogat ?? ?? ?? ?? ??
 				success = clientCommunications.sendMessage(new Message(recipient, isGroupMsg, filename, type, data));
 			}
 			else success = clientCommunications.sendMessage(new Message(recipient, isGroupMsg, filename, type, bytes));

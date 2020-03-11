@@ -35,8 +35,7 @@ public class Data {
 		return contacts.get(contactName);
 	}
 	
-	public boolean isContact(String contactName) {
-		return contacts.containsKey(contactName);
+	public boolean isContact(String contactName) { return contacts.containsKey(contactName);
 	}
 	
 	public Collection<Contact> getContacts() { return contacts.values(); }

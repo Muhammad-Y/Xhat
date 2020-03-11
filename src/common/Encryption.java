@@ -70,9 +70,15 @@ public class Encryption{
 	}
 
 	public static PublicKey getPublic(String filename) throws Exception {
-		byte[] keyBytes = Files.readAllBytes(new File(filename).toPath());
-		X509EncodedKeySpec spec = new X509EncodedKeySpec(keyBytes);
-		KeyFactory kf = KeyFactory.getInstance("RSA");
+        KeyFactory kf = null;
+        X509EncodedKeySpec spec = null;
+        try {
+            byte[] keyBytes = Files.readAllBytes(new File(filename).toPath());
+             spec = new X509EncodedKeySpec(keyBytes);
+             kf = KeyFactory.getInstance("RSA");
+        }catch(Exception e){
+	        System.out.println("??????ECRYPTION?????" + e.toString());
+        }
 		return kf.generatePublic(spec);
 	}
 
