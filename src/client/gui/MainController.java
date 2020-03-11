@@ -312,6 +312,7 @@ public class MainController {
 
 	public void addMessageToConversation(Contact contact, Message message, boolean isText) {
 		JLabel jLabelMessage = null;
+		JLabel selfie = null;
 		if(isText)
 			try {
 				String text = "";
@@ -340,26 +341,11 @@ public class MainController {
 					jLabelMessage.setIcon(convertpicture(filepath));
 
 
-					JLabel selfie = new JLabel();
+					selfie = new JLabel();
 					selfie.setIcon(convertpicture(message.getFilePath()));
 
-					jLabelMessage.setFont(plainMessageFont);
-					contact.addMessageToConversation(selfie);
-					mainPanel.scrollDownConversation();
-					//för att öppna normala storleken men funkar inte
-		/*		jLabelMessage.addMouseListener(new MouseAdapter() {
-					private Color background;
 
-					@Override
-					public void mousePressed(MouseEvent e) {
-						JOptionPane.showMessageDialog(null, oldimageIcon);
 
-					}imageIcon
-
-					@Override
-					public void mouseReleased(MouseEvent e) {
-					}
-				}); */
 
 				}
 
@@ -368,6 +354,10 @@ public class MainController {
 				e.printStackTrace();
 			}
 		if (jLabelMessage != null) {
+			jLabelMessage.setFont(plainMessageFont);
+			contact.addMessageToConversation(selfie);
+			mainPanel.scrollDownConversation();
+
 			jLabelMessage.setFont(plainMessageFont);
 			contact.addMessageToConversation(jLabelMessage);
 			mainPanel.scrollDownConversation();
