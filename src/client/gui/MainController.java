@@ -346,8 +346,8 @@ public class MainController {
 
 				jLabelMessage.setIcon(imageIcon);
 
-				//kommer inte funka jlabeln konverteras senare i procsesen
-				jLabelMessage.addMouseListener(new MouseAdapter() {
+				//för att öppna normala storleken men funkar inte
+		/*		jLabelMessage.addMouseListener(new MouseAdapter() {
 					private Color background;
 
 					@Override
@@ -359,7 +359,7 @@ public class MainController {
 					@Override
 					public void mouseReleased(MouseEvent e) {
 					}
-				});
+				}); */
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
