@@ -320,27 +320,62 @@ public class MainController {
 							message.getSender() + " - " + Encryption.decryptText(new String(message.getFileData()), ENCRYPTION_KEY);
 					else text =
 							message.getSender() + " - " + Encryption.decryptText(new String(message.getFileData()), "key/"+message.getRecipient()+".pvt");
-				else text = "You - " + new String(message.getFileData());
+				else {
+				    text = "You - " + new String(message.getFileData());
+				}
 				jLabelMessage = new JLabel(text);
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
 		else
 			try {
-				if(message.getSender() != "You") {
-					File file = new File(downloadPath + message.getFileName() + ".enc");//TODO: låt dem välja fil ist !!!
-					FileUtils.writeByteArrayToFile(file, message.getFileData());
-					if(!message.isGroupMessage()) Encryption.decryptFile(file, ENCRYPTION_KEY);
-					else Encryption.decryptFile(file, "key/"+message.getRecipient()+".pvt");
-					file.delete();
-					String filepath = downloadPath + message.getFileName();
+			        File file = new File(message.getFilePath());
+			        String path = "";//File
+                    ImageIcon imgIcon = null;
+                    if(message.getSender() != "You") {
+
+                        file = new File(downloadPath + message.getFileName());//TODO: låt dem välja fil ist !!!
+
+                        if(ifImg(file)){
+                            imgIcon = convertpicture(file.getPath());
+                        }
+                        else {
+
+                            path = file.getName();
+
+                            FileUtils.writeByteArrayToFile(file, message.getFileData());
+                            if (!message.isGroupMessage()) Encryption.decryptFile(file, ENCRYPTION_KEY);
+                            else Encryption.decryptFile(file, "key/" + message.getRecipient() + ".pvt");
+                            file.delete();
+                        }
+                    }
+
+                    else{ // "VI SKICKAR "
+                        if(ifImg(file)){
+                            imgIcon = convertpicture(message.getFilePath());
+                        }
+                        else{
+                            path = message.getFileName();
+                        }
+                    }
+
+
+                    if (path.equals("")){
+                        jLabelMessage = new JLabel(imgIcon);
+                    }
+                    else {
+                        jLabelMessage = new JLabel(path);
+                    }
+                    path="";
+
+					/*String filepath = downloadPath + message.getFileName();
 					jLabelMessage = new JLabel();
 					if(file.getName().contains(".jpg") || file.getName().contains(".jpeg") || file.getName().contains(".png")){
 					    jLabelMessage.setIcon(convertpicture(filepath));}
 					else{ // FILER !!
-					    jLabelMessage.setText(file.getName());
-                    }
-				}
+					    jLabelMessage = new JLabel(file.getName());
+                    }*/
+
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
@@ -351,7 +386,14 @@ public class MainController {
 		}
 	}
 
-	public ImageIcon convertpicture(String path) {
+    private boolean ifImg(File file) {
+        if(file.getName().contains(".jpg") || file.getName().contains(".png") || file.getName().contains(".jpeg"))
+	    return true;
+
+        return false;
+    }
+
+    public ImageIcon convertpicture(String path) {
 		ImageIcon oldimageIcon = new ImageIcon(path);
 		System.out.println(path);
 		Image image = oldimageIcon.getImage(); // transform it
