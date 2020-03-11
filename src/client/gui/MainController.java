@@ -354,10 +354,11 @@ public class MainController {
 				e.printStackTrace();
 			}
 		if (jLabelMessage != null) {
+		if (selfie != null) {
 			jLabelMessage.setFont(plainMessageFont);
 			contact.addMessageToConversation(selfie);
 			mainPanel.scrollDownConversation();
-
+		}
 			jLabelMessage.setFont(plainMessageFont);
 			contact.addMessageToConversation(jLabelMessage);
 			mainPanel.scrollDownConversation();
