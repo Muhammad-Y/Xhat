@@ -333,20 +333,19 @@ public class MainController {
 					if(!message.isGroupMessage()) Encryption.decryptFile(file, ENCRYPTION_KEY);
 					else Encryption.decryptFile(file, "key/"+message.getRecipient()+".pvt");
 					file.delete();
-				}
 
-				ImageIcon imageIcon ;
+					ImageIcon imageIcon ;
 
-				ImageIcon oldimageIcon = new ImageIcon(message.getFilePath());
-				JLabel oldpic = new JLabel(oldimageIcon);
-				Image image = oldimageIcon.getImage(); // transform it
-				Image newimg = image.getScaledInstance(120, 120,  java.awt.Image.SCALE_SMOOTH); // scale it the smooth way
-				imageIcon = new ImageIcon(newimg);  // transform it back
-				jLabelMessage = new JLabel();
+					ImageIcon oldimageIcon = new ImageIcon(file.getAbsolutePath());
+					JLabel oldpic = new JLabel(oldimageIcon);
+					Image image = oldimageIcon.getImage(); // transform it
+					Image newimg = image.getScaledInstance(120, 120,  java.awt.Image.SCALE_SMOOTH); // scale it the smooth way
+					imageIcon = new ImageIcon(newimg);  // transform it back
+					jLabelMessage = new JLabel();
 
-				jLabelMessage.setIcon(imageIcon);
+					jLabelMessage.setIcon(imageIcon);
 
-				//för att öppna normala storleken men funkar inte
+					//för att öppna normala storleken men funkar inte
 		/*		jLabelMessage.addMouseListener(new MouseAdapter() {
 					private Color background;
 
@@ -354,12 +353,16 @@ public class MainController {
 					public void mousePressed(MouseEvent e) {
 						JOptionPane.showMessageDialog(null, oldimageIcon);
 
-					}
+					}imageIcon
 
 					@Override
 					public void mouseReleased(MouseEvent e) {
 					}
 				}); */
+
+				}
+
+
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
