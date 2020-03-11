@@ -312,6 +312,8 @@ public class MainController {
 
 	public void addMessageToConversation(Contact contact, Message message, boolean isText) {
 		JLabel jLabelMessage = null;
+		JLabel othemsg = null;
+
 		if(isText)
 			try {
 				String text = "";
@@ -337,7 +339,7 @@ public class MainController {
 
 				ImageIcon imageIcon ;
 
-				ImageIcon oldimageIcon = new ImageIcon(message.getFilePath());
+				ImageIcon oldimageIcon = new ImageIcon(downloadPath + message.getFileName());
 				JLabel oldpic = new JLabel(oldimageIcon);
 				Image image = oldimageIcon.getImage(); // transform it
 				Image newimg = image.getScaledInstance(120, 120,  java.awt.Image.SCALE_SMOOTH); // scale it the smooth way
@@ -346,26 +348,28 @@ public class MainController {
 
 				jLabelMessage.setIcon(imageIcon);
 
-				//för att öppna normala storleken men funkar inte
-		/*		jLabelMessage.addMouseListener(new MouseAdapter() {
-					private Color background;
+				ImageIcon imageIconn ;
 
-					@Override
-					public void mousePressed(MouseEvent e) {
-						JOptionPane.showMessageDialog(null, oldimageIcon);
+				ImageIcon s = new ImageIcon(message.getFilePath());
+				JLabel oldpicc = new JLabel(s);
+				Image imag = oldimageIcon.getImage(); // transform it
+				Image newimge = imag.getScaledInstance(120, 120,  java.awt.Image.SCALE_SMOOTH); // scale it the smooth way
+				imageIconn = new ImageIcon(newimge);  // transform it back
+				othemsg = new JLabel();
 
-					}
+				othemsg.setIcon(imageIconn);
 
-					@Override
-					public void mouseReleased(MouseEvent e) {
-					}
-				}); */
+
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
 		if (jLabelMessage != null) {
 			jLabelMessage.setFont(plainMessageFont);
 			contact.addMessageToConversation(jLabelMessage);
+			if (othemsg != null) {
+
+				contact.addMessageToConversation(othemsg);
+			}
 			mainPanel.scrollDownConversation();
 		}
 	}
