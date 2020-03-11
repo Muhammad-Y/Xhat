@@ -7,6 +7,8 @@ import org.apache.commons.io.FileUtils;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.util.*;
@@ -169,16 +171,16 @@ public class MainController {
 		clientCommunications.disconnect();
 	}
 
-	public boolean sendMessage(String recipient, byte[] bytes, String filename, boolean isGroupMsg, int type) {
+	public boolean sendMessage(String recipient, byte[] bytes, String filename, boolean isGroupMsg, int type, String pa) {
 		boolean success = false;
 		try {
 			if(type == Message.TYPE_TEXT) {
 				byte[] data = Encryption.encryptText(mainPanel.getMessageTxt(), mainPanel.getEncryptionKey(recipient)).getBytes("UTF-8");
-				success = clientCommunications.sendMessage(new Message(recipient, isGroupMsg, filename, type, data));
+				success = clientCommunications.sendMessage(new Message(recipient, isGroupMsg, filename, type, data,pa));
 			}
-			else success = clientCommunications.sendMessage(new Message(recipient, isGroupMsg, filename, type, bytes));
+			else success = clientCommunications.sendMessage(new Message(recipient, isGroupMsg, filename, type, bytes,pa));
 			if(success) {
-				Message message = new Message(recipient, isGroupMsg, filename, type, bytes);
+				Message message = new Message(recipient, isGroupMsg, filename, type, bytes,pa);
 				message.setSender("You");
 				Contact contact = (isGroupMsg) ? data.getGroup(recipient) : data.getContact(recipient);
 				addMessageToConversation(contact, message, message.getType()==0);
@@ -332,7 +334,32 @@ public class MainController {
 					else Encryption.decryptFile(file, "key/"+message.getRecipient()+".pvt");
 					file.delete();
 				}
-				jLabelMessage = new JLabel(message.getFileName());
+
+				ImageIcon imageIcon ;
+
+				ImageIcon oldimageIcon = new ImageIcon(message.getFilePath());
+				JLabel oldpic = new JLabel(oldimageIcon);
+				Image image = oldimageIcon.getImage(); // transform it
+				Image newimg = image.getScaledInstance(120, 120,  java.awt.Image.SCALE_SMOOTH); // scale it the smooth way
+				imageIcon = new ImageIcon(newimg);  // transform it back
+				jLabelMessage = new JLabel();
+
+				jLabelMessage.setIcon(imageIcon);
+
+				//kommer inte funka jlabeln konverteras senare i procsesen
+				jLabelMessage.addMouseListener(new MouseAdapter() {
+					private Color background;
+
+					@Override
+					public void mousePressed(MouseEvent e) {
+						JOptionPane.showMessageDialog(null, oldimageIcon);
+
+					}
+
+					@Override
+					public void mouseReleased(MouseEvent e) {
+					}
+				});
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
