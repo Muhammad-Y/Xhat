@@ -335,17 +335,19 @@ public class MainController {
 					file.delete();
 
 					ImageIcon imageIcon ;
-String filepath = downloadPath + message.getFileName();
+					String filepath = downloadPath + message.getFileName();
 					ImageIcon oldimageIcon = new ImageIcon(filepath);
-System.out.println(filepath);
-					JLabel oldpic = new JLabel(oldimageIcon);
+					System.out.println(filepath);
 					Image image = oldimageIcon.getImage(); // transform it
 					Image newimg = image.getScaledInstance(120, 120,  java.awt.Image.SCALE_SMOOTH); // scale it the smooth way
 					imageIcon = new ImageIcon(newimg);  // transform it back
+
 					jLabelMessage = new JLabel();
-
 					jLabelMessage.setIcon(imageIcon);
-
+					JLabel selfie = new JLabel(imageIcon);
+					jLabelMessage.setFont(plainMessageFont);
+					contact.addMessageToConversation(selfie);
+					mainPanel.scrollDownConversation();
 					//för att öppna normala storleken men funkar inte
 		/*		jLabelMessage.addMouseListener(new MouseAdapter() {
 					private Color background;
