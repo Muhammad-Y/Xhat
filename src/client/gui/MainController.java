@@ -333,18 +333,15 @@ public class MainController {
 					if(!message.isGroupMessage()) Encryption.decryptFile(file, ENCRYPTION_KEY);
 					else Encryption.decryptFile(file, "key/"+message.getRecipient()+".pvt");
 					file.delete();
-
-					ImageIcon imageIcon ;
 					String filepath = downloadPath + message.getFileName();
-					ImageIcon oldimageIcon = new ImageIcon(filepath);
-					System.out.println(filepath);
-					Image image = oldimageIcon.getImage(); // transform it
-					Image newimg = image.getScaledInstance(120, 120,  java.awt.Image.SCALE_SMOOTH); // scale it the smooth way
-					imageIcon = new ImageIcon(newimg);  // transform it back
+
 
 					jLabelMessage = new JLabel();
-					jLabelMessage.setIcon(imageIcon);
-					JLabel selfie = new JLabel(imageIcon);
+					jLabelMessage.setIcon(convertpicture(filepath));
+
+
+					JLabel selfie = new JLabel(convertpicture(message.getFilePath()));
+
 					jLabelMessage.setFont(plainMessageFont);
 					contact.addMessageToConversation(selfie);
 					mainPanel.scrollDownConversation();
@@ -374,6 +371,16 @@ public class MainController {
 			contact.addMessageToConversation(jLabelMessage);
 			mainPanel.scrollDownConversation();
 		}
+	}
+
+	public ImageIcon convertpicture(String path) {
+		ImageIcon oldimageIcon = new ImageIcon(path);
+		System.out.println(path);
+		Image image = oldimageIcon.getImage(); // transform it
+		Image newimg = image.getScaledInstance(120, 120,  java.awt.Image.SCALE_SMOOTH); // scale it the smooth way
+		ImageIcon imageIcon = new ImageIcon(newimg);  // transform it back
+
+	 return imageIcon;
 	}
 
 	public void disconnected(String message) {
