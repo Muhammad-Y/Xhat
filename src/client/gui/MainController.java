@@ -312,7 +312,6 @@ public class MainController {
 
 	public void addMessageToConversation(Contact contact, Message message, boolean isText) {
 		JLabel jLabelMessage = null;
-		JLabel selfie = null;
 		if(isText)
 			try {
 				String text = "";
@@ -329,36 +328,23 @@ public class MainController {
 		else
 			try {
 				if(message.getSender() != "You") {
-					File file = new File(downloadPath + message.getFileName() + ".enc");
+					File file = new File(downloadPath + message.getFileName() + ".enc");//TODO: låt dem välja fil ist !!!
 					FileUtils.writeByteArrayToFile(file, message.getFileData());
 					if(!message.isGroupMessage()) Encryption.decryptFile(file, ENCRYPTION_KEY);
 					else Encryption.decryptFile(file, "key/"+message.getRecipient()+".pvt");
 					file.delete();
 					String filepath = downloadPath + message.getFileName();
-
-
 					jLabelMessage = new JLabel();
-					jLabelMessage.setIcon(convertpicture(filepath));
-
-
-					selfie = new JLabel();
-					selfie.setIcon(convertpicture(message.getFilePath()));
-
-
-
-
+					if(file.getName().contains(".jpg") || file.getName().contains(".jpeg") || file.getName().contains(".png")){
+					    jLabelMessage.setIcon(convertpicture(filepath));}
+					else{ // FILER !!
+					    jLabelMessage.setText(file.getName());
+                    }
 				}
-
-
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
 		if (jLabelMessage != null) {
-		if (selfie != null) {
-			jLabelMessage.setFont(plainMessageFont);
-			contact.addMessageToConversation(selfie);
-			mainPanel.scrollDownConversation();
-		}
 			jLabelMessage.setFont(plainMessageFont);
 			contact.addMessageToConversation(jLabelMessage);
 			mainPanel.scrollDownConversation();

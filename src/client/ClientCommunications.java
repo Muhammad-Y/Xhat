@@ -261,6 +261,10 @@ public class ClientCommunications implements Runnable {
 					else if(message.getType() == Message.TYPE_FILE){
 						mainController.addMessageToConversation(senderContact, message, false);
 					}
+                    else if(message.getType() == Message.TYPE_IMAGE){
+
+                        mainController.addMessageToConversation(senderContact, message, false);
+                    }
 				} else {
 					senderContact.addUnreadMessage(message);
 					mainController.notifyNewMessage(senderName, message.isGroupMessage());
