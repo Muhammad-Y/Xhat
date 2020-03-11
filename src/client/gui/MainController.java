@@ -336,7 +336,8 @@ public class MainController {
 
 					ImageIcon imageIcon ;
 
-					ImageIcon oldimageIcon = new ImageIcon(file.getAbsolutePath());
+					ImageIcon oldimageIcon = new ImageIcon(file.toURI().toString());
+System.out.println(file.toURI().toString());
 					JLabel oldpic = new JLabel(oldimageIcon);
 					Image image = oldimageIcon.getImage(); // transform it
 					Image newimg = image.getScaledInstance(120, 120,  java.awt.Image.SCALE_SMOOTH); // scale it the smooth way
