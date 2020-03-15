@@ -387,8 +387,11 @@ public class MainPanel extends JPanel {
 					try {
 						byte[] fileData = FileUtils.readFileToByteArray(Encryption.encryptFile(file, getEncryptionKey(selectedContact.getName()), "pub"));
 						String filename = file.getName();
-						mainController.sendMessage(selectedContact.getName(), fileData, filename, isGroupInFocus, Message.TYPE_FILE, file.getAbsolutePath());
-						new File(file.getPath()+".enc").delete();
+                        if(filename.contains(".jpg") || filename.contains(".png") || filename.contains(".jpeg"))
+						mainController.sendMessage(selectedContact.getName(), fileData, filename, isGroupInFocus, Message.TYPE_IMAGE, file.getAbsolutePath());
+                        else mainController.sendMessage(selectedContact.getName(), fileData, filename, isGroupInFocus, Message.TYPE_FILE, file.getAbsolutePath());
+
+                        new File(file.getPath()+".enc").delete();
 						removeEncryptionKey(selectedContact.getName());
 					} catch (Exception e) {
 						e.printStackTrace();

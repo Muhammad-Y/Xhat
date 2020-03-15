@@ -257,13 +257,13 @@ public class ClientCommunications implements Runnable {
 				if(mainController.isContactSelected(senderName)) {
 					System.out.println(message.getFileName()+"\n"+message.getType());
 					if(message.getType() == Message.TYPE_TEXT)
-						mainController.addMessageToConversation(senderContact, message, true);
+						mainController.addMessageToConversation(senderContact, message, 0);
 					else if(message.getType() == Message.TYPE_FILE){
-						mainController.addMessageToConversation(senderContact, message, false);
+						mainController.addMessageToConversation(senderContact, message, 2);
 					}
                     else if(message.getType() == Message.TYPE_IMAGE){
 
-                        mainController.addMessageToConversation(senderContact, message, false);
+                        mainController.addMessageToConversation(senderContact, message, 1);
                     }
 				} else {
 					senderContact.addUnreadMessage(message);
