@@ -67,6 +67,12 @@ public class MainController {
 		}
 	}
 
+	private void updateFrameMain() {
+		frameMain.invalidate();
+		frameMain.validate();
+		frameMain.repaint();
+	}
+
 	public void setDownloadPath() {
 		String home = System.getProperty("user.home");
 		String separator = System.getProperty("file.separator");
@@ -230,6 +236,8 @@ public class MainController {
 
 	public void removeContact(String username) {
 		clientCommunications.removeContact(username);
+		updateContactsList();
+		updateFrameMain();
 	}
 
 	/**

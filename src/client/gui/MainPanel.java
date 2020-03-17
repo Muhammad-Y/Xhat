@@ -403,6 +403,7 @@ public class MainPanel extends JPanel {
 		}
 
 		private void removeContact() {
+
 			JLabel selectedContact = jlistContactList.getSelectedValue();
 			if (selectedContact != null) {
 				Object[] options = {"Yes", "No"};
@@ -411,10 +412,12 @@ public class MainPanel extends JPanel {
 						"Remove Contact", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[1]);
 				if (choice == 0) {
 					mainController.removeContact(selectedContact.getName());
+
 				}
 			}
 			else JOptionPane.showMessageDialog(null, "Please select a contact.", "Info", JOptionPane.INFORMATION_MESSAGE);
 		}
+
 
 		private void leaveGroupChat() {
 			JLabel selectedGroup = jlistGroupChats.getSelectedValue();

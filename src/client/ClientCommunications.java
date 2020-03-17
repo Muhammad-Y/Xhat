@@ -91,6 +91,8 @@ public class ClientCommunications implements Runnable {
 			oos.writeObject("RemoveContact");
 			oos.writeObject(username);
 			oos.flush();
+
+			this.data = new Data();
 		} catch (IOException e) {
 			disconnect();
 		}
