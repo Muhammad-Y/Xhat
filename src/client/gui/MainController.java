@@ -178,7 +178,12 @@ public class MainController {
 				byte[] data = Encryption.encryptText(mainPanel.getMessageTxt(), mainPanel.getEncryptionKey(recipient)).getBytes("UTF-8");
 				success = clientCommunications.sendMessage(new Message(recipient, isGroupMsg, filename, type, data,pa));
 			}
-			else success = clientCommunications.sendMessage(new Message(recipient, isGroupMsg, filename, type, bytes,pa));
+			else if ( type ==  Message.TYPE_FILE){
+			    success = clientCommunications.sendMessage(new Message(recipient, isGroupMsg, filename, type, bytes,pa));
+			}
+			else if ( type == Message.TYPE_IMAGE){ //inget
+
+                }
 			if(success) {
 				Message message = new Message(recipient, isGroupMsg, filename, type, bytes,pa);
 				message.setSender("You");
@@ -333,8 +338,8 @@ public class MainController {
                 String path = "";//File
                 ImageIcon imgIcon = null;
                 if(message.getSender() != "You") {
-                    int i = JOptionPane.showConfirmDialog(null , "Vill du ladda ner filen? " , "Du fick en fil" , JOptionPane.YES_NO_OPTION);
-                    if( i ==  JOptionPane.YES_OPTION)
+                    int fileChoice = JOptionPane.showConfirmDialog(null , "Vill du ladda ner filen? " , "Du fick en fil" , JOptionPane.YES_NO_OPTION);
+                    if( fileChoice ==  JOptionPane.YES_OPTION)
                     {
                         file = new File(downloadPath + message.getFileName() + ".enc");//TODO: låt dem välja fil ist !!!
                         FileUtils.writeByteArrayToFile(file, message.getFileData());
@@ -347,8 +352,9 @@ public class MainController {
                     }
                 }
 
-                else // "VI SKICKAR "
-                {   path = message.getFileName(); }
+                else {      // "VI SKICKAR "
+                    path = message.getFileName();
+                }
 
                 jLabelMessage = new JLabel(path);
 
@@ -365,25 +371,9 @@ public class MainController {
             contact.addMessageToConversation(jLabelMessage);
             mainPanel.scrollDownConversation();
         }
-					/*String filepath = downloadPath + message.getFileName();
-					jLabelMessage = new JLabel();
-					if(file.getName().contains(".jpg") || file.getName().contains(".jpeg") || file.getName().contains(".png")){
-					    jLabelMessage.setIcon(convertpicture(filepath));}
-					else{ // FILER !!
-					    jLabelMessage = new JLabel(file.getName());
-                    }*/
-
-
 	}
 
-    private boolean ifImg(File file) {
-        if(file.getName().contains(".jpg") || file.getName().contains(".png") || file.getName().contains(".jpeg"))
-	    return true;
-
-        return false;
-    }
-
-    public ImageIcon convertpicture(String path) {
+    public ImageIcon convertpicture(String path) { //TODO: använd den
 		ImageIcon oldimageIcon = new ImageIcon(path);
 		System.out.println(path);
 		Image image = oldimageIcon.getImage(); // transform it
