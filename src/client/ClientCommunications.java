@@ -270,10 +270,10 @@ public class ClientCommunications implements Runnable {
 					mainController.notifyNewMessage(senderName, message.isGroupMessage());
 				}
 			} else {
-				ClientLogger.logError("receiveMessage(): Sender not in contact/group list: " + message.getSender() + "/" + message.getRecipient());
+				ClientLogger.logError("receiveMessage() : Sender not in contact/group list: " + message.getSender() + "/" + message.getRecipient());
 			}
 		} else {
-			ClientLogger.logError("receiveMessage(): Received non-Message object.");
+			ClientLogger.logError("receiveMessage() : Received non-Message object.");
 		}
 	}
 	
