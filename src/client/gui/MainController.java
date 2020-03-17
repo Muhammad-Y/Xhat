@@ -178,12 +178,17 @@ public class MainController {
 				byte[] data = Encryption.encryptText(mainPanel.getMessageTxt(), mainPanel.getEncryptionKey(recipient)).getBytes("UTF-8");
 				success = clientCommunications.sendMessage(new Message(recipient, isGroupMsg, filename, type, data,pa));
 			}
-			else success = clientCommunications.sendMessage(new Message(recipient, isGroupMsg, filename, type, bytes,pa));
+			else if ( type ==  Message.TYPE_FILE){
+			    success = clientCommunications.sendMessage(new Message(recipient, isGroupMsg, filename, type, bytes,pa));
+			}
+			else if ( type == Message.TYPE_IMAGE){ //inget
+
+                }
 			if(success) {
 				Message message = new Message(recipient, isGroupMsg, filename, type, bytes,pa);
 				message.setSender("You");
 				Contact contact = (isGroupMsg) ? data.getGroup(recipient) : data.getContact(recipient);
-				addMessageToConversation(contact, message, message.getType()==0);
+				addMessageToConversation(contact, message, message.getType());
 				mainPanel.clearMessageField();
 			}
 		} catch (IllegalArgumentException e) {
@@ -294,7 +299,7 @@ public class MainController {
 			this.contactInFocus = selectedContact;
 			while (contact.hasUnreadMessages()) {
 				Message message = contact.getNextUnreadMessage();
-				addMessageToConversation(contact, message, message.getType()==0);
+				addMessageToConversation(contact, message, message.getType());
 				contact.removeNextUnreadMessage();
 			}
 			mainPanel.setConversationModel(contact.getConversation());
@@ -310,9 +315,9 @@ public class MainController {
 		return isSelected;
 	}
 
-	public void addMessageToConversation(Contact contact, Message message, boolean isText) {
+	public void addMessageToConversation(Contact contact, Message message, int type) {
 		JLabel jLabelMessage = null;
-		if(isText)
+		if(type == 0)
 			try {
 				String text = "";
 				if(message.getSender() != "You")
@@ -320,54 +325,58 @@ public class MainController {
 							message.getSender() + " - " + Encryption.decryptText(new String(message.getFileData()), ENCRYPTION_KEY);
 					else text =
 							message.getSender() + " - " + Encryption.decryptText(new String(message.getFileData()), "key/"+message.getRecipient()+".pvt");
-				else text = "You - " + new String(message.getFileData());
+				else {
+				    text = "You - " + new String(message.getFileData());
+				}
 				jLabelMessage = new JLabel(text);
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
-		else
-			try {
-				if(message.getSender() != "You") {
-					File file = new File(downloadPath + message.getFileName() + ".enc");
-					FileUtils.writeByteArrayToFile(file, message.getFileData());
-					if(!message.isGroupMessage()) Encryption.decryptFile(file, ENCRYPTION_KEY);
-					else Encryption.decryptFile(file, "key/"+message.getRecipient()+".pvt");
-					file.delete();
-				}
+		    else if(type == 2){ //FILES
+            try {
+                File file = new File(message.getFilePath());
+                String path = "";//File
+                ImageIcon imgIcon = null;
+                if(message.getSender() != "You") {
+                    int fileChoice = JOptionPane.showConfirmDialog(null , "Vill du ladda ner filen? " , "Du fick en fil" , JOptionPane.YES_NO_OPTION);
+                    if( fileChoice ==  JOptionPane.YES_OPTION)
+                    {
+                        file = new File(downloadPath + message.getFileName() + ".enc");//TODO: låt dem välja fil ist !!!
+                        FileUtils.writeByteArrayToFile(file, message.getFileData());
 
-				ImageIcon imageIcon ;
+                    if (!message.isGroupMessage()) Encryption.decryptFile(file, ENCRYPTION_KEY);
+                    else Encryption.decryptFile(file, "key/" + message.getRecipient() + ".pvt");
+                    path = file.getName();
 
-				ImageIcon oldimageIcon = new ImageIcon(message.getFilePath());
-				JLabel oldpic = new JLabel(oldimageIcon);
-				Image image = oldimageIcon.getImage(); // transform it
-				Image newimg = image.getScaledInstance(120, 120,  java.awt.Image.SCALE_SMOOTH); // scale it the smooth way
-				imageIcon = new ImageIcon(newimg);  // transform it back
-				jLabelMessage = new JLabel();
+                    file.delete();
+                    }
+                }
+                else {  // "VI SKICKAR "
+                    path = message.getFileName();
+                }
+                jLabelMessage = new JLabel(path);
 
-				jLabelMessage.setIcon(imageIcon);
+            } catch (Exception e) { e.printStackTrace(); }
 
-				//för att öppna normala storleken men funkar inte
-		/*		jLabelMessage.addMouseListener(new MouseAdapter() {
-					private Color background;
+		    }
+		    else if(type == 1){
+            jLabelMessage = new JLabel("IMAGE");
+        }
+        if (jLabelMessage != null) {
+            jLabelMessage.setFont(plainMessageFont);
+            contact.addMessageToConversation(jLabelMessage);
+            mainPanel.scrollDownConversation();
+        }
+	}
 
-					@Override
-					public void mousePressed(MouseEvent e) {
-						JOptionPane.showMessageDialog(null, oldimageIcon);
+    public ImageIcon convertpicture(String path) { //TODO: använd den
+		ImageIcon oldimageIcon = new ImageIcon(path);
+		System.out.println(path);
+		Image image = oldimageIcon.getImage(); // transform it
+		Image newimg = image.getScaledInstance(120, 120,  java.awt.Image.SCALE_SMOOTH); // scale it the smooth way
+		ImageIcon imageIcon = new ImageIcon(newimg);  // transform it back
 
-					}
-
-					@Override
-					public void mouseReleased(MouseEvent e) {
-					}
-				}); */
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-		if (jLabelMessage != null) {
-			jLabelMessage.setFont(plainMessageFont);
-			contact.addMessageToConversation(jLabelMessage);
-			mainPanel.scrollDownConversation();
-		}
+	 return imageIcon;
 	}
 
 	public void disconnected(String message) {
