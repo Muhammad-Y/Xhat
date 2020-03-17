@@ -333,14 +333,18 @@ public class MainController {
                 String path = "";//File
                 ImageIcon imgIcon = null;
                 if(message.getSender() != "You") {
-                    file = new File(downloadPath + message.getFileName() + ".enc");//TODO: låt dem välja fil ist !!!
-                    FileUtils.writeByteArrayToFile(file, message.getFileData());
+                    int i = JOptionPane.showConfirmDialog(null , "Vill du ladda ner filen? " , "Du fick en fil" , JOptionPane.YES_NO_OPTION);
+                    if( i ==  JOptionPane.YES_OPTION)
+                    {
+                        file = new File(downloadPath + message.getFileName() + ".enc");//TODO: låt dem välja fil ist !!!
+                        FileUtils.writeByteArrayToFile(file, message.getFileData());
 
                     if (!message.isGroupMessage()) Encryption.decryptFile(file, ENCRYPTION_KEY);
                     else Encryption.decryptFile(file, "key/" + message.getRecipient() + ".pvt");
                     path = file.getName();
 
                     file.delete();
+                    }
                 }
 
                 else // "VI SKICKAR "
