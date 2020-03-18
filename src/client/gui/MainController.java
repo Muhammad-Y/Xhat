@@ -376,7 +376,7 @@ public class MainController {
 				 String path = "";//File
 				 ImageIcon imgIcon = null;
 				 if(message.getSender() != "You") {
-					 int fileChoice = JOptionPane.showConfirmDialog(null , "Vill du ladda ner filen? " , "Du fick en fil" , JOptionPane.YES_NO_OPTION);
+					 int fileChoice = JOptionPane.showConfirmDialog(null , "Vill du ladda ner bilden? " , "Du fick en bild" , JOptionPane.YES_NO_OPTION);
 					 if( fileChoice ==  JOptionPane.YES_OPTION)
 					 {
 						 file = new File(downloadPath + message.getFileName() + ".enc");//TODO: låt dem välja fil ist !!!
@@ -395,7 +395,6 @@ public class MainController {
 				 }
 
 				 jLabelMessage = new JLabel(convertpicture(downloadPath + message.getFileName()));
-				 System.out.println("path izzz" + downloadPath + message.getFileName());
 
 
 			 }
