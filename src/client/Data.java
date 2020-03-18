@@ -15,21 +15,7 @@ public class Data {
 	public Data() {
 		//read from disk if we want
 	}
-	
-	public void addContact(Contact contact) {
-		contacts.put(contact.getName(), contact);
-	}
 
-	public void removeContacts(String[][] contacts) {
-		this.contacts.clear();
-        int i = 0;
-		for(String[] contact : contacts) {
-			String name = contact[i++];
-			this.contacts.put(name, new Contact(name));
-		}
-
-	}
-	
 	public Contact getContact(String contactName) {
 		return contacts.get(contactName);
 	}
@@ -75,9 +61,3 @@ public class Data {
         }
     }
 }
-/*
-
-			*/
-
-//data.updateContact(contacts);
-//data = new Data();
