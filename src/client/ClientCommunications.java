@@ -90,11 +90,9 @@ public class ClientCommunications implements Runnable {
 
 	public void removeContact(String username) {
 		try {
-		   //TODO: String [] remove = new String[]{ this.userName, username};
 			oos.writeObject("RemoveContact");
 			oos.writeObject(username);
 			oos.flush();
-		   //TODO:  this.data = new Data();
 
 		} catch (IOException e) {
 			disconnect();
@@ -208,21 +206,6 @@ public class ClientCommunications implements Runnable {
             mainController.updateContactsList();
             ClientLogger.logInfo("Received and processed new contactList");
         }
-
-				/*
-				boolean isOnline = Boolean.parseBoolean(contacts[i][1]);
-				Contact contact = data.getContact(contactName);
-				if (contact == null) {
-					contact = new Contact(contactName);
-					data.addContact(contact);
-				}
-
-				contact.setIsOnline(isOnline);
-			}
-			*/
-
-            //data.updateContact(contacts);
-		    //data = new Data();
 	}
 
 	private void receiveGroupChats(Object groupsObj) {

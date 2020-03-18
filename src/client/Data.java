@@ -63,11 +63,21 @@ public class Data {
     public void updateContact(String[][] contacts) {
 
         this.contacts.clear();
+
         for(int i = 0; i < contacts.length; i++)
         {
+            boolean isOnline = Boolean.parseBoolean(contacts[i][1]);
             String name = contacts[i][0];
             Contact temp = new Contact(name);
+            temp.setIsOnline(isOnline);
             this.contacts.put(name, temp);
+
         }
     }
 }
+/*
+
+			*/
+
+//data.updateContact(contacts);
+//data = new Data();

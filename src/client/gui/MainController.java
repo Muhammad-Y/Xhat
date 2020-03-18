@@ -182,8 +182,8 @@ public class MainController {
 			    success = clientCommunications.sendMessage(new Message(recipient, isGroupMsg, filename, type, bytes,pa));
 			}
 			else if ( type == Message.TYPE_IMAGE){ //inget
-
-                }
+                success = clientCommunications.sendMessage(new Message(recipient, isGroupMsg, filename, type, bytes,pa));
+            }
 			if(success) {
 				Message message = new Message(recipient, isGroupMsg, filename, type, bytes,pa);
 				message.setSender("You");
@@ -316,25 +316,26 @@ public class MainController {
 		return isSelected;
 	}
 
-	public void addMessageToConversation(Contact contact, Message message, int type) {
-		JLabel jLabelMessage = null;
-		if(type == 0)
-			try {
-				String text = "";
-				if(message.getSender() != "You")
-					if(!message.isGroupMessage()) text =
-							message.getSender() + " - " + Encryption.decryptText(new String(message.getFileData()), ENCRYPTION_KEY);
-					else text =
-							message.getSender() + " - " + Encryption.decryptText(new String(message.getFileData()), "key/"+message.getRecipient()+".pvt");
-				else {
-				    text = "You - " + new String(message.getFileData());
-				}
-				jLabelMessage = new JLabel(text);
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-		    else if(type == 2){ //FILES
+    public void addMessageToConversation(Contact contact, Message message, int type) {
+        JLabel jLabelMessage = null;
+        if(type == 0)
             try {
+                String text = "";
+                if(message.getSender() != "You")
+                    if(!message.isGroupMessage()) text =
+                            message.getSender() + " - " + Encryption.decryptText(new String(message.getFileData()), ENCRYPTION_KEY);
+                    else text =
+                            message.getSender() + " - " + Encryption.decryptText(new String(message.getFileData()), "key/"+message.getRecipient()+".pvt");
+                else {
+                    text = "You - " + new String(message.getFileData());
+                }
+                jLabelMessage = new JLabel(text);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        try {
+            if(type == 2){ //FILES
+
                 File file = new File(message.getFilePath());
                 String path = "";//File
                 ImageIcon imgIcon = null;
@@ -345,11 +346,11 @@ public class MainController {
                         file = new File(downloadPath + message.getFileName() + ".enc");//TODO: låt dem välja fil ist !!!
                         FileUtils.writeByteArrayToFile(file, message.getFileData());
 
-                    if (!message.isGroupMessage()) Encryption.decryptFile(file, ENCRYPTION_KEY);
-                    else Encryption.decryptFile(file, "key/" + message.getRecipient() + ".pvt");
-                    path = file.getName();
+                        if (!message.isGroupMessage()) Encryption.decryptFile(file, ENCRYPTION_KEY);
+                        else Encryption.decryptFile(file, "key/" + message.getRecipient() + ".pvt");
+                        path = file.getName();
 
-                    file.delete();
+                        file.delete();
                     }
                 }
 
@@ -359,20 +360,42 @@ public class MainController {
 
                 jLabelMessage = new JLabel(path);
 
-            } catch (Exception e) {
-                e.printStackTrace();
+
+
+            }
+            else if(type == 1){
+                File file = new File(message.getFilePath());
+                String path = "";//File
+                ImageIcon imgIcon = null;
+                if(message.getSender() != "You") {
+                    int fileChoice = JOptionPane.showConfirmDialog(null , "Vill du ladda ner bilden? " , "Du fick en bild" , JOptionPane.YES_NO_OPTION);
+                    if( fileChoice ==  JOptionPane.YES_OPTION)
+                    {
+                        file = new File(downloadPath + message.getFileName() + ".enc");//TODO: låt dem välja fil ist !!!
+                        FileUtils.writeByteArrayToFile(file, message.getFileData());
+
+                        if (!message.isGroupMessage()) Encryption.decryptFile(file, ENCRYPTION_KEY);
+                        else Encryption.decryptFile(file, "key/" + message.getRecipient() + ".pvt");
+                        path = file.getName();
+
+                        file.delete();
+                    }
+                }
+                else {      // "VI SKICKAR "
+                    path = message.getFilePath();
+                }
+                jLabelMessage = new JLabel(convertpicture(downloadPath + message.getFileName()));
             }
 
-		    }
-		    else if(type == 1){
-            jLabelMessage = new JLabel("IMAGE");
+        } catch (Exception e) {
+            e.printStackTrace();
         }
         if (jLabelMessage != null) {
             jLabelMessage.setFont(plainMessageFont);
             contact.addMessageToConversation(jLabelMessage);
             mainPanel.scrollDownConversation();
         }
-	}
+    }
 
     public ImageIcon convertpicture(String path) { //TODO: använd den
 		ImageIcon oldimageIcon = new ImageIcon(path);
