@@ -188,6 +188,7 @@ public class MainController {
 			    success = clientCommunications.sendMessage(new Message(recipient, isGroupMsg, filename, type, bytes,pa));
 			}
 			else if ( type == Message.TYPE_IMAGE){ //inget
+				success = clientCommunications.sendMessage(new Message(recipient, isGroupMsg, filename, type, bytes,pa));
 
                 }
 			if(success) {
@@ -340,8 +341,9 @@ public class MainController {
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
-		    else if(type == 2){ //FILES
-            try {
+		try {
+		     if(type == 2){ //FILES
+
                 File file = new File(message.getFilePath());
                 String path = "";//File
                 ImageIcon imgIcon = null;
@@ -366,14 +368,41 @@ public class MainController {
 
                 jLabelMessage = new JLabel(path);
 
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+
 
 		    }
 		    else if(type == 1){
-            jLabelMessage = new JLabel("IMAGE");
-        }
+				 File file = new File(message.getFilePath());
+				 String path = "";//File
+				 ImageIcon imgIcon = null;
+				 if(message.getSender() != "You") {
+					 int fileChoice = JOptionPane.showConfirmDialog(null , "Vill du ladda ner filen? " , "Du fick en fil" , JOptionPane.YES_NO_OPTION);
+					 if( fileChoice ==  JOptionPane.YES_OPTION)
+					 {
+						 file = new File(downloadPath + message.getFileName() + ".enc");//TODO: låt dem välja fil ist !!!
+						 FileUtils.writeByteArrayToFile(file, message.getFileData());
+
+						 if (!message.isGroupMessage()) Encryption.decryptFile(file, ENCRYPTION_KEY);
+						 else Encryption.decryptFile(file, "key/" + message.getRecipient() + ".pvt");
+						 path = file.getName();
+
+						 file.delete();
+					 }
+				 }
+
+				 else {      // "VI SKICKAR "
+					 path = message.getFilePath();
+				 }
+
+				 jLabelMessage = new JLabel(convertpicture(downloadPath + message.getFileName()));
+				 System.out.println("path izzz" + downloadPath + message.getFileName());
+
+
+			 }
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
         if (jLabelMessage != null) {
             jLabelMessage.setFont(plainMessageFont);
             contact.addMessageToConversation(jLabelMessage);
