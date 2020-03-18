@@ -10,11 +10,9 @@ import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.lang.reflect.Array;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
-import java.util.Arrays;
 
 public class ClientCommunications implements Runnable {
 	private Thread thread;
@@ -94,6 +92,7 @@ public class ClientCommunications implements Runnable {
 			oos.writeObject(username);
 			oos.flush();
 
+			this.data = new Data();
 		} catch (IOException e) {
 			disconnect();
 		}
@@ -186,26 +185,36 @@ public class ClientCommunications implements Runnable {
 			if (loggedIn) mainController.disconnected(message);
 			this.loggedIn = false;
 			this.data = new Data();
-
 			ClientLogger.logInfo(message);
 		}
 	}
 	
 	private void establishConnection() throws SocketException, IOException {
-        socket = new Socket(ip, port);
-        //socket.setSoTimeout(1000);
-        oos = new ObjectOutputStream(socket.getOutputStream());
-        ois = new ObjectInputStream(socket.getInputStream());
-    }
+		socket = new Socket(ip, port);
+		//socket.setSoTimeout(1000);
+		oos = new ObjectOutputStream(socket.getOutputStream());
+		ois = new ObjectInputStream(socket.getInputStream());
+	}
 
 	private void receiveContactList(Object contactsObj) throws ClassNotFoundException, IOException {
 		if (contactsObj instanceof String[][]) {
 			String[][] contacts = (String[][])contactsObj;
-
-            data.updateContact(contacts);
-            mainController.updateContactsList();
-            ClientLogger.logInfo("Received and processed new contactList");
-        }
+			//data.removeContacts(contacts);
+			for (int i = 0; i < contacts.length; i++) {
+				String contactName = contacts[i][0];
+				boolean isOnline = Boolean.parseBoolean(contacts[i][1]);
+				Contact contact = data.getContact(contactName);
+				if (contact == null) {
+					contact = new Contact(contactName);
+					data.addContact(contact);
+				}
+				contact.setIsOnline(isOnline);
+			}
+			mainController.updateContactsList();
+			ClientLogger.logInfo("Received and processed new contactList");
+		} else {
+			ClientLogger.logError("receiveContactList(): Received non-String[] object.");
+		}
 	}
 
 	private void receiveGroupChats(Object groupsObj) {
