@@ -409,8 +409,8 @@ public class MainPanel extends JPanel {
 				int choice = JOptionPane.showOptionDialog(null,
 						"Do you want to remove " + selectedContact.getName() + " from contact list?",
 						"Remove Contact", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[1]);
-				if (choice == 0) {
-					mainController.removeContact(selectedContact.getName());
+				if (choice == JOptionPane.YES_OPTION) {
+					mainController.removeContact( selectedContact.getName());
 				}
 			}
 			else JOptionPane.showMessageDialog(null, "Please select a contact.", "Info", JOptionPane.INFORMATION_MESSAGE);

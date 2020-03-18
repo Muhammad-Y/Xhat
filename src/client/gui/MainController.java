@@ -230,6 +230,7 @@ public class MainController {
 
 	public void removeContact(String username) {
 		clientCommunications.removeContact(username);
+		//TODO: updateContactsList();
 	}
 
 	/**
