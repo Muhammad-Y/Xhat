@@ -8,6 +8,7 @@ import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
+import java.sql.Array;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -162,6 +163,7 @@ public class ClientConnectionDB implements Runnable, UserListener {
         if (contactObj instanceof String) {
             dbh.open();
             try {
+              //  dbh.removeContactRequest(user.toString(), (String)contactObj);
                 dbh.removeContact(user.toString(), (String)contactObj);
                 dbh.removeContact((String)contactObj, user.toString());
                 logListener.logInfo("receiveRemoveContact() " + user.toString() + " removed " + (String)contactObj + " from contacts");

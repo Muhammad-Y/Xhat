@@ -10,9 +10,11 @@ import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.lang.reflect.Array;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
+import java.util.Arrays;
 
 public class ClientCommunications implements Runnable {
 	private Thread thread;
@@ -30,7 +32,7 @@ public class ClientCommunications implements Runnable {
 		this.port = port;
 		this.data = data;
 	}
-	
+
 	public boolean sendMessage(Message message) {
 		boolean success = false;
 		try {
@@ -44,7 +46,7 @@ public class ClientCommunications implements Runnable {
 		}
 		return success;
 	}
-	
+
 	public void sendNewContactRequest(String[] requestObj) {
 		try {
 			oos.writeObject("NewContactRequest");
@@ -54,7 +56,7 @@ public class ClientCommunications implements Runnable {
 			disconnect();
 		}
 	}
-	
+
 	public void searchUser(String searchString) {
 		try {
 			oos.writeObject("SearchUser");
@@ -75,7 +77,7 @@ public class ClientCommunications implements Runnable {
 			disconnect();
 		}
 	}
-	
+
 	public void leaveGroup(String groupId) {
 		try {
 	        oos.writeObject("LeaveGroup");
@@ -91,11 +93,12 @@ public class ClientCommunications implements Runnable {
 			oos.writeObject("RemoveContact");
 			oos.writeObject(username);
 			oos.flush();
+
 		} catch (IOException e) {
 			disconnect();
 		}
 	}
-	
+
 	public String getUserName() {
 		return this.userName;
 	}
@@ -107,7 +110,7 @@ public class ClientCommunications implements Runnable {
 		}
 		return connected;
 	}
-	
+
 	public boolean login(String userName, String password) {
 		//TODO: Dont let UI-thread from LoginController execute this code
 		try {
@@ -162,7 +165,7 @@ public class ClientCommunications implements Runnable {
 			receiveEncryptionKey(key, userName, true);
 		return result;
 	}
-	
+
 	public void disconnect() {
 		disconnect("Disconnected from server");
 	}
@@ -183,36 +186,26 @@ public class ClientCommunications implements Runnable {
 			if (loggedIn) mainController.disconnected(message);
 			this.loggedIn = false;
 			this.data = new Data();
+
 			ClientLogger.logInfo(message);
 		}
 	}
-	
+
 	private void establishConnection() throws SocketException, IOException {
-		socket = new Socket(ip, port);
-		//socket.setSoTimeout(1000);
-		oos = new ObjectOutputStream(socket.getOutputStream());
-		ois = new ObjectInputStream(socket.getInputStream());
-	}
+        socket = new Socket(ip, port);
+        //socket.setSoTimeout(1000);
+        oos = new ObjectOutputStream(socket.getOutputStream());
+        ois = new ObjectInputStream(socket.getInputStream());
+    }
 
 	private void receiveContactList(Object contactsObj) throws ClassNotFoundException, IOException {
 		if (contactsObj instanceof String[][]) {
 			String[][] contacts = (String[][])contactsObj;
-			//data.removeContacts(contacts);
-			for (int i = 0; i < contacts.length; i++) {
-				String contactName = contacts[i][0];
-				boolean isOnline = Boolean.parseBoolean(contacts[i][1]);
-				Contact contact = data.getContact(contactName);
-				if (contact == null) {
-					contact = new Contact(contactName);
-					data.addContact(contact);
-				}
-				contact.setIsOnline(isOnline);
-			}
-			mainController.updateContactsList();
-			ClientLogger.logInfo("Received and processed new contactList");
-		} else {
-			ClientLogger.logError("receiveContactList(): Received non-String[] object.");
-		}
+
+            data.updateContact(contacts);
+            mainController.updateContactsList();
+            ClientLogger.logInfo("Received and processed new contactList");
+        }
 	}
 
 	private void receiveGroupChats(Object groupsObj) {
@@ -257,19 +250,23 @@ public class ClientCommunications implements Runnable {
 				if(mainController.isContactSelected(senderName)) {
 					System.out.println(message.getFileName()+"\n"+message.getType());
 					if(message.getType() == Message.TYPE_TEXT)
-						mainController.addMessageToConversation(senderContact, message, true);
+						mainController.addMessageToConversation(senderContact, message, 0);
 					else if(message.getType() == Message.TYPE_FILE){
-						mainController.addMessageToConversation(senderContact, message, false);
+						mainController.addMessageToConversation(senderContact, message, 2);
 					}
+                    else if(message.getType() == Message.TYPE_IMAGE){
+
+                        mainController.addMessageToConversation(senderContact, message, 1);
+                    }
 				} else {
 					senderContact.addUnreadMessage(message);
 					mainController.notifyNewMessage(senderName, message.isGroupMessage());
 				}
 			} else {
-				ClientLogger.logError("receiveMessage(): Sender not in contact/group list: " + message.getSender() + "/" + message.getRecipient());
+				ClientLogger.logError("receiveMessage() : Sender not in contact/group list: " + message.getSender() + "/" + message.getRecipient());
 			}
 		} else {
-			ClientLogger.logError("receiveMessage(): Received non-Message object.");
+			ClientLogger.logError("receiveMessage() : Received non-Message object.");
 		}
 	}
 	
