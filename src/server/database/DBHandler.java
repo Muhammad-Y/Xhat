@@ -11,9 +11,12 @@ import server.User;
 public final class DBHandler {
     private Connection conn;
     private LogListener logListener;
+    private String user, password;
 
-    public DBHandler(LogListener logListener) {
+    public DBHandler(LogListener logListener, String dbUser, String dbPassword) {
         this.logListener = logListener;
+        user = dbUser;
+        password = dbPassword;
         try {
             Class.forName("org.postgresql.Driver").getConstructor().newInstance();
         } catch (Exception e) {
@@ -24,8 +27,8 @@ public final class DBHandler {
     public void open() {
         try {
             conn = DriverManager.
-                    getConnection("jdbc:postgresql://xhat-db.cnzyqrtrhsgw.us-east-1.rds.amazonaws.com/postgres",
-                            "postgres", "cEe9hIxcFfljtgRoRfv3");
+                    getConnection("jdbc:postgresql://pgserver.mah.se/ai9856",
+                            user, password);
         } catch (SQLException e) {
             logListener.logError("Connection failed.");
         }

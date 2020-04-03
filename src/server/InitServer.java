@@ -10,7 +10,8 @@ public class InitServer {
 
 //		ServerLogger serverLogger = new ServerLogger();
 		ClientsManager clientsManager = new ClientsManager(threadPool);
-		ServerConnection serverConnection = new ServerConnection(2020, clientsManager, threadPool);
+		ServerConnection serverConnection = new ServerConnection(
+				2020, clientsManager, threadPool, args[0], args[1]);
 		new ServerController(serverConnection);
 
 	//	InitClient c1 = new InitClient();

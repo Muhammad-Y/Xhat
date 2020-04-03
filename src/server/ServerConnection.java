@@ -18,11 +18,15 @@ public class ServerConnection implements Runnable {
 	private DBHandler dbh;
 	private ThreadPool threadPool;
 	private LogListener logListener;
+	private String user, password;
 
-	public ServerConnection(int listeningPort, ClientsManager clientsManager, ThreadPool threadPool) {
+	public ServerConnection(int listeningPort, ClientsManager clientsManager, ThreadPool threadPool,
+							String dbUser, String dbPassword) {
 		this.listeningPort = listeningPort;
 		this.clientsManager = clientsManager;
 		this.threadPool = threadPool;
+		user = dbUser;
+		password = dbPassword;
 	}
 	
 	public void addListener(LogListener listener) {
@@ -53,7 +57,7 @@ public class ServerConnection implements Runnable {
 	public void run() {
 		try (ServerSocket serverSocket = new ServerSocket(listeningPort)) {
 			logListener.logInfo("Server listening on: " + InetAddress.getLocalHost().getHostAddress() + ":" + serverSocket.getLocalPort());
-			dbh  = new DBHandler(logListener);
+			dbh  = new DBHandler(logListener, user, password);
 			dbh.open();
 			dbh.resetOnlineStatus();
 			dbh.close();
